@@ -67,6 +67,7 @@ namespace BananaHumper.Bootstrap
             shift.bunchVisual = bunchVisual;
             shift.cutterX = cutterX;
             shift.trailerX = trailerX;
+            shift.Initialize();
 
             hud.Bind(shift, balance, energy, economy, balanceConfig);
 

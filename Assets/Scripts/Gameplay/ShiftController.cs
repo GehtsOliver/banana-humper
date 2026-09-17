@@ -62,7 +62,13 @@ namespace BananaHumper.Gameplay
 
         ShiftSummary summary;
 
-        void Awake()
+        /// <summary>
+        /// Muss aufgerufen werden, nachdem alle public Referenzen (config, placement,
+        /// balance, energy, economy, ...) gesetzt wurden. Nicht in Awake(), weil
+        /// GameBootstrap die Referenzen erst nach AddComponent&lt;ShiftController&gt;()
+        /// zuweist und Awake() bereits synchron beim AddComponent-Aufruf feuert.
+        /// </summary>
+        public void Initialize()
         {
             balance.OnFallen += HandleFallen;
             balance.OnSnapped += HandleSnapped;
