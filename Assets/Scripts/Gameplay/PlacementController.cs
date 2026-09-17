@@ -37,7 +37,8 @@ namespace BananaHumper.Gameplay
 
         void SetActive(bool active)
         {
-            if (shoulderMarker != null) shoulderMarker.gameObject.SetActive(active);
+            // shoulderMarker ist der Spieler selbst (siehe GameBootstrap) - der bleibt
+            // immer sichtbar. Nur die rote Zielmarkierung ist reine Auflegen-UI.
             if (targetMarker != null) targetMarker.gameObject.SetActive(active);
         }
 
