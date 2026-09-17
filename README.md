@@ -40,10 +40,15 @@ Roadmap für sich allein Spaß macht (Kapitel 12, Graybox-Test).
 
 ## Steuerung
 
+Die Maus steuert überall per **Bewegung/Delta**, nicht per Cursor-Position –
+wie ein Besen, den man auf der Hand balanciert (GDD 3.3). Der Cursor wird
+während der Schicht automatisch gesperrt und ausgeblendet (sonst würde man
+am Rand des Game-View-Fensters hängen bleiben); beim Schichtende-Screen wird
+er wieder freigegeben, damit der Button klickbar ist.
+
 - **Auflegen:** Maus horizontal bewegen, um die Schulter unter die rote
   Zielmarkierung zu bringen, bevor die Staude fällt.
-- **Balancieren:** Maus horizontal bewegen, um die Staude auszugleichen
-  (wie ein Besen auf der Hand, GDD 3.3).
+- **Balancieren:** Maus horizontal bewegen, um die Staude auszugleichen.
 - **Linke Maustaste halten:** rennen (schneller, mehr Wackeln, mehr
   Energieverbrauch).
 - **Rechte Maustaste:** umsetzen (kurzer Stillstand, reduziert den

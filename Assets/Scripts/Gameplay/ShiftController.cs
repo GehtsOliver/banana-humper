@@ -101,6 +101,8 @@ namespace BananaHumper.Gameplay
             placement.Setup(cutterX);
             SetPlayerPosition(cutterX);
             IsShiftActive = true;
+            Cursor.lockState = CursorLockMode.Locked;
+            Cursor.visible = false;
             OnShiftStarted?.Invoke();
             StartCoroutine(ShiftLoop());
         }
@@ -113,6 +115,8 @@ namespace BananaHumper.Gameplay
             }
 
             IsShiftActive = false;
+            Cursor.lockState = CursorLockMode.None;
+            Cursor.visible = true;
             summary.MoneyEarned = economy.Money - moneyAtShiftStart;
             summary.ExperienceEarned = economy.Experience - experienceAtShiftStart;
             OnShiftEnded?.Invoke(summary);

@@ -49,12 +49,17 @@ namespace BananaHumper.Gameplay
             float targetX = cutterWorldX + targetOffsetWorld;
             if (targetMarker != null) targetMarker.position = new Vector3(targetX, targetMarker.position.y, 0f);
 
+            // Relative Mausbewegung wie beim Balancieren (3.3), nicht die absolute
+            // Cursorposition - der Cursor ist waehrend der Schicht gesperrt (siehe
+            // ShiftController), Input.mousePosition liefert dann keine brauchbaren Werte mehr.
+            float shoulderOffset = 0f;
             float shoulderX = cutterWorldX;
             float elapsed = 0f;
             while (elapsed < config.placementTelegraphSeconds)
             {
-                float mouseWorldX = ScreenXToWorldX(Input.mousePosition.x);
-                shoulderX = Mathf.Clamp(mouseWorldX, cutterWorldX - config.placementZoneHalfWidth, cutterWorldX + config.placementZoneHalfWidth);
+                float mouseDeltaX = Input.GetAxis("Mouse X");
+                shoulderOffset = Mathf.Clamp(shoulderOffset + mouseDeltaX * config.placementMouseSensitivity, -config.placementZoneHalfWidth, config.placementZoneHalfWidth);
+                shoulderX = cutterWorldX + shoulderOffset;
                 if (shoulderMarker != null) shoulderMarker.position = new Vector3(shoulderX, shoulderMarker.position.y, 0f);
 
                 elapsed += Time.deltaTime;
@@ -67,14 +72,6 @@ namespace BananaHumper.Gameplay
 
             SetActive(false);
             OnPlacementResolved?.Invoke(offset, sweetSpot);
-        }
-
-        float ScreenXToWorldX(float screenX)
-        {
-            Camera cam = Camera.main;
-            if (cam == null) return cutterWorldX;
-            Vector3 world = cam.ScreenToWorldPoint(new Vector3(screenX, Screen.height * 0.5f, -cam.transform.position.z));
-            return world.x;
         }
     }
 }
