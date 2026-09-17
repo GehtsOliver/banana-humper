@@ -10,8 +10,8 @@ Roadmap für sich allein Spaß macht (Kapitel 12, Graybox-Test).
 
 ## Umgebung
 
-- **Engine:** Unity 6 (`6000.0.23f1` in `ProjectVersion.txt` – bei Bedarf in
-  Unity Hub anpassen, jede 6000.0.x-Version sollte das Projekt öffnen).
+- **Engine:** Unity 6 (`6000.3.24f1` LTS in `ProjectVersion.txt` – bei Bedarf
+  in Unity Hub anpassen, jede 6000.x-Version sollte das Projekt öffnen).
 - **Render Pipeline:** Built-in (nicht URP). Das GDD nennt URP als Zielwert;
   für diesen ersten Graybox-Pass wurde bewusst Built-in gewählt, weil es ohne
   Editor-Konfiguration läuft. Umstieg auf URP ist später ein einzelner
