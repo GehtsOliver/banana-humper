@@ -50,14 +50,15 @@ anlegen, `GameBootstrap`-Komponente draufziehen, oder das Menü
 
 ## Steuerung
 
-Die Maus steuert überall per **Bewegung/Delta**, nicht per Cursor-Position –
-wie ein Besen, den man auf der Hand balanciert (GDD 3.3). Der Cursor wird
-während der Schicht automatisch gesperrt und ausgeblendet (sonst würde man
-am Rand des Game-View-Fensters hängen bleiben); beim Schichtende-Screen wird
-er wieder freigegeben, damit der Button klickbar ist.
+Die Maus steuert überall, wo sie zum Einsatz kommt, per **Bewegung/Delta**,
+nicht per Cursor-Position – wie ein Besen, den man auf der Hand balanciert
+(GDD 3.3). Der Cursor wird während der Schicht automatisch gesperrt und
+ausgeblendet (sonst würde man am Rand des Game-View-Fensters hängen
+bleiben); beim Schichtende-Screen wird er wieder freigegeben, damit der
+Button klickbar ist.
 
-- **Auflegen:** Maus horizontal bewegen, um die Schulter unter die rote
-  Zielmarkierung zu bringen, bevor die Staude fällt.
+- **Auflegen:** `A`/`D`, um die Schulter unter die rote Zielmarkierung zu
+  bringen, bevor die Staude fällt.
 - **Tragen - Laufen:** `A`/`D` zum Trailer bzw. zurück (ersetzt die
   automatische Bewegung aus GDD 3.1 [A] - bewusste Design-Entscheidung).
 - **Tragen - Balancieren:** zusätzlich, gleichzeitig zum Laufen, Maus
