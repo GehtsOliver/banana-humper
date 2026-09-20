@@ -56,6 +56,7 @@ namespace BananaHumper.Config
         public float placementTelegraphSeconds = 0.8f;
         public float placementToleranceWorldUnits = 1.5f;
         public float placementZoneHalfWidth = 2.0f;
+        public float placementMouseSensitivity = 0.05f;
         [Range(0f, 1f)] public float sweetSpotOffset = 0.1f;
 
         [Header("Bewegung")]

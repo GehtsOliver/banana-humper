@@ -111,6 +111,8 @@ namespace BananaHumper.Gameplay
             placement.Setup(cutterX);
             SetPlayerPosition(cutterX);
             IsShiftActive = true;
+            Cursor.lockState = CursorLockMode.Locked;
+            Cursor.visible = false;
             OnShiftStarted?.Invoke();
             StartCoroutine(ShiftLoop());
         }
@@ -123,6 +125,8 @@ namespace BananaHumper.Gameplay
             }
 
             IsShiftActive = false;
+            Cursor.lockState = CursorLockMode.None;
+            Cursor.visible = true;
             summary.MoneyEarned = economy.Money - moneyAtShiftStart;
             summary.ExperienceEarned = economy.Experience - experienceAtShiftStart;
             OnShiftEnded?.Invoke(summary);
@@ -153,6 +157,7 @@ namespace BananaHumper.Gameplay
             }
 
             balance.BeginTrip(currentBunch, placementOffset);
+            SetBunchVisualActive(true);
 
             // --- Tragen zum Trailer ---
             // Bewegung per A/D (Design-Entscheidung, ersetzt die automatische
@@ -214,6 +219,7 @@ namespace BananaHumper.Gameplay
             }
 
             balance.StopTrip();
+            SetBunchVisualActive(false);
 
             if (energyRanOutMidCarry)
             {
@@ -286,6 +292,19 @@ namespace BananaHumper.Gameplay
             bunchVisual.localRotation = Quaternion.Euler(0f, 0f, -balance.Theta * Mathf.Rad2Deg);
             bunchVisual.localPosition = new Vector3(balance.Offset * config.placementToleranceWorldUnits * 0.5f, bunchVisual.localPosition.y, 0f);
             bunchVisualController?.UpdateStress(balance.Stress / 100f, balance.IsCreaking, balance.IsBending);
+        }
+
+        /// <summary>Blendet die Staude aus, solange sie nicht getragen wird (Auflegen, Rueckweg), damit ein
+        /// Fallen/Snap nicht als "kaputtes, an der Schulter klebendes Objekt" haengen bleibt.</summary>
+        void SetBunchVisualActive(bool active)
+        {
+            if (bunchVisual == null) return;
+            bunchVisual.gameObject.SetActive(active);
+            if (active)
+            {
+                bunchVisual.localRotation = Quaternion.identity;
+                bunchVisual.localPosition = new Vector3(0f, bunchVisual.localPosition.y, 0f);
+            }
         }
     }
 }
