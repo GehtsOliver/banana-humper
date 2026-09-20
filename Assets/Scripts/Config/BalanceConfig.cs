@@ -15,15 +15,18 @@ namespace BananaHumper.Config
         public float gravityOverLength = 4.0f;
         public float offsetTorque = 1.5f;
         public float damping = 1.2f;
-        // Steuert jetzt Unity's "Vertical"-Achse (W/S, siehe
+        // Steuert Unity's "Vertical"-Achse (W/S, siehe
         // ProjectSettings/InputManager.asset), nicht mehr Input.GetAxis("Mouse X").
-        // Die Achse liefert bei gehaltener Taste ueber ~0.3s (gravity/sensitivity
-        // je 3) einen Ramp bis +-1, bleibt aber auf 1 stehen solange die Taste
-        // haengt - anders als ein kurzer Mausschlag, der sofort wieder auf 0
-        // faellt. 3.5 ist ein erster Schaetzwert (reicht, um das max.
-        // Schwerkraft-Drehmoment nahe maxAngle von ~4.6 bei Dauerhalten zu
-        // kontern) - noch nicht spielgetestet, naechster Tuning-Kandidat.
-        public float controlStrength = 3.5f;
+        // Die Achse bleibt auf +-1 stehen, solange die Taste haengt, statt wie
+        // ein Mausschlag sofort wieder auf 0 zu fallen - dadurch baut sich bei
+        // gehaltener Taste kontinuierlich Drehimpuls auf (alpha wirkt jeden
+        // Frame). War testweise 3.5, aber Nutzer-Feedback: "Neigung faellt zu
+        // stark durch den Tastendruck" - bei 3.5 reicht schon eine halbe
+        // Sekunde Halten, um weit ueber die comfortAngle hinauszuschiessen.
+        // 1.2 macht kurze Taps noch spuerbar, ohne dass ein Tap gleich zum
+        // Umkippen in die Gegenrichtung fuehrt - naechster Tuning-Kandidat,
+        // falls es jetzt zu schwach ist.
+        public float controlStrength = 1.2f;
         public float wobbleWalk = 0.6f;
         public float wobbleRun = 1.5f;
         public float stepFrequency = 4.0f;
