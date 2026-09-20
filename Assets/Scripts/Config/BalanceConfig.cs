@@ -15,15 +15,15 @@ namespace BananaHumper.Config
         public float gravityOverLength = 4.0f;
         public float offsetTorque = 1.5f;
         public float damping = 1.2f;
-        // War 0.015 - bei Unity's "Mouse X"-Achse (sensitivity 0.1, siehe
-        // ProjectSettings/InputManager.asset) liefert Input.GetAxis("Mouse X")
-        // nur Werte im Bereich ~1-15. Mit 0.015 konnte selbst ein schneller
-        // Mausschlag (mouseDeltaX=15) nur 0.225 Gegen-Drehmoment erzeugen,
-        // gegen bis zu ~2.3 Schwerkraft-Drehmoment nahe maxAngle - unmoeglich
-        // zu kontrollieren (Nutzer-Feedback: "kippt egal was ich mache").
-        // 0.15 macht schnelle Mausschlaege spuerbar wirksam, ohne trivial zu
-        // werden - erster Tuning-Kandidat laut README, bei Bedarf weiter anpassen.
-        public float controlStrength = 0.15f;
+        // Steuert jetzt Unity's "Vertical"-Achse (W/S, siehe
+        // ProjectSettings/InputManager.asset), nicht mehr Input.GetAxis("Mouse X").
+        // Die Achse liefert bei gehaltener Taste ueber ~0.3s (gravity/sensitivity
+        // je 3) einen Ramp bis +-1, bleibt aber auf 1 stehen solange die Taste
+        // haengt - anders als ein kurzer Mausschlag, der sofort wieder auf 0
+        // faellt. 3.5 ist ein erster Schaetzwert (reicht, um das max.
+        // Schwerkraft-Drehmoment nahe maxAngle von ~4.6 bei Dauerhalten zu
+        // kontern) - noch nicht spielgetestet, naechster Tuning-Kandidat.
+        public float controlStrength = 3.5f;
         public float wobbleWalk = 0.6f;
         public float wobbleRun = 1.5f;
         public float stepFrequency = 4.0f;

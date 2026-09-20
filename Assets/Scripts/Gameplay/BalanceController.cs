@@ -70,7 +70,9 @@ namespace BananaHumper.Gameplay
             float noise = (UnityEngine.Random.value * 2f - 1f) * config.wobbleNoise;
             float wobble = wobbleAmplitude * (Mathf.Sin(stepPhase) * 0.5f + noise);
 
-            float mouseDeltaX = Input.GetAxis("Mouse X");
+            // W/S (Unity-"Vertical"-Achse) statt Maus - Maus ist jetzt
+            // ausschliesslich fuers Rennen reserviert (siehe ShiftController).
+            float steerInput = Input.GetAxis("Vertical");
 
             float impulse = pendingImpulse;
             pendingImpulse = 0f;
@@ -78,7 +80,7 @@ namespace BananaHumper.Gameplay
             float alpha = config.gravityOverLength * Mathf.Sin(Theta) * weightFactor
                         + config.offsetTorque * Offset * weightFactor
                         - config.damping * Omega
-                        - config.controlStrength * mouseDeltaX
+                        - config.controlStrength * steerInput
                         + wobble
                         + impulse;
 

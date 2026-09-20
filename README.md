@@ -50,24 +50,20 @@ anlegen, `GameBootstrap`-Komponente draufziehen, oder das Menü
 
 ## Steuerung
 
-Die Maus steuert überall, wo sie zum Einsatz kommt, per **Bewegung/Delta**,
-nicht per Cursor-Position – wie ein Besen, den man auf der Hand balanciert
-(GDD 3.3). Der Cursor wird während der Schicht automatisch gesperrt und
-ausgeblendet (sonst würde man am Rand des Game-View-Fensters hängen
-bleiben); beim Schichtende-Screen wird er wieder freigegeben, damit der
-Button klickbar ist.
+Die Maus wird bewusst nur noch fürs Rennen benutzt (Nutzerentscheidung,
+weicht von GDD 3.3 ab, siehe [docs/DECISIONS.md](docs/DECISIONS.md)); alle
+Bewegungs- und Balance-Eingaben laufen über die Tastatur.
 
 - **Auflegen:** `A`/`D`, um die Schulter unter die rote Zielmarkierung zu
   bringen, bevor die Staude fällt.
 - **Tragen - Laufen:** `A`/`D` zum Trailer bzw. zurück (ersetzt die
   automatische Bewegung aus GDD 3.1 [A] - bewusste Design-Entscheidung).
-- **Tragen - Balancieren:** zusätzlich, gleichzeitig zum Laufen, Maus
-  horizontal bewegen, um die Staude auszugleichen (wie ein Besen auf der
-  Hand, GDD 3.3).
+- **Tragen - Balancieren:** zusätzlich, gleichzeitig zum Laufen, `W`/`S`
+  halten, um die Staude auszugleichen (ersetzt die Maus aus GDD 3.3).
 - **Linke Maustaste halten (während `A`/`D` gedrückt ist):** rennen
   (schneller, mehr Wackeln, mehr Energieverbrauch).
-- **Rechte Maustaste:** umsetzen (kurzer Stillstand, reduziert den
-  Auflage-Versatz, kostet Energie).
+- **`E`:** umsetzen (kurzer Stillstand, reduziert den Auflage-Versatz,
+  kostet Energie).
 - Schicht endet automatisch, wenn die Energie leer ist; Button im
   Endscreen startet die nächste Schicht.
 

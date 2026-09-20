@@ -111,8 +111,6 @@ namespace BananaHumper.Gameplay
             placement.Setup(cutterX);
             SetPlayerPosition(cutterX);
             IsShiftActive = true;
-            Cursor.lockState = CursorLockMode.Locked;
-            Cursor.visible = false;
             OnShiftStarted?.Invoke();
             StartCoroutine(ShiftLoop());
         }
@@ -125,8 +123,6 @@ namespace BananaHumper.Gameplay
             }
 
             IsShiftActive = false;
-            Cursor.lockState = CursorLockMode.None;
-            Cursor.visible = true;
             summary.MoneyEarned = economy.Money - moneyAtShiftStart;
             summary.ExperienceEarned = economy.Experience - experienceAtShiftStart;
             OnShiftEnded?.Invoke(summary);
@@ -161,8 +157,9 @@ namespace BananaHumper.Gameplay
 
             // --- Tragen zum Trailer ---
             // Bewegung per A/D (Design-Entscheidung, ersetzt die automatische
-            // Bewegung aus GDD 3.1 [A]); Balancieren bleibt zusaetzlich per Maus
-            // (BalanceController.Tick liest Mouse X unabhaengig davon).
+            // Bewegung aus GDD 3.1 [A]); Balancieren laeuft parallel per W/S
+            // (BalanceController.Tick liest die Vertical-Achse unabhaengig
+            // davon). Die Maus ist ausschliesslich fuers Rennen reserviert.
             CurrentPhase = TripPhase.Carrying;
             energyRanOutMidCarry = false;
             float minX = Mathf.Min(cutterX, trailerX);
@@ -174,7 +171,9 @@ namespace BananaHumper.Gameplay
             {
                 float dt = Time.deltaTime;
 
-                if (Input.GetMouseButtonDown(1) && balance.TryBeginReposition())
+                // E statt rechter Maustaste - Maus ist ausschliesslich fuers
+                // Rennen reserviert (Nutzerwunsch).
+                if (Input.GetKeyDown(KeyCode.E) && balance.TryBeginReposition())
                 {
                     energy.ApplyRepositionCost();
                 }

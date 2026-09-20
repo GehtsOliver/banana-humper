@@ -41,6 +41,21 @@ stattdessen manuelles Laufen mit `A`/`D`, gleichzeitig zum Balancieren.
 **Begründung:** [E] von Olli — macht das Tragen aktiver statt einer reinen
 Balance-Warteschleife.
 
+## 2026-09-20 — Balancieren per W/S statt Maus, Maus nur noch fürs Rennen
+
+GDD 3.3 sah Maus-Bewegung fürs Balancieren vor ("wie ein Besen, den man auf
+der Hand balanciert"). Umgesetzt wurde stattdessen `W`/`S` (Unity-
+"Vertical"-Achse). Als Folge wanderte auch "Umsetzen" von der rechten
+Maustaste auf `E`, damit die Maus ausschließlich fürs Rennen (linke
+Maustaste halten) zuständig bleibt.
+
+**Begründung:** [E] von Olli. `BalanceConfig.controlStrength` wurde dabei
+von 0.15 (getunt für `Input.GetAxis("Mouse X")`-Werte im Bereich ~1–15) auf
+3.5 angepasst, weil die Tastatur-Achse nur bis ±1 ausschlägt, dafür aber
+bei gehaltener Taste dauerhaft auf 1 bleibt statt wie ein Mausschlag sofort
+wieder abzuklingen — ungetesteter erster Schätzwert, siehe
+`docs/PLAYTEST_LOG.md`.
+
 ## 2026-09 — Cutter-Figur ohne konkrete Hautfarbe/Gesichtszüge
 
 Bewusst abstrakt gehalten (prozedurale Form statt Figuren-Asset mit
