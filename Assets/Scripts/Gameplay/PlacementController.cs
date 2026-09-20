@@ -7,9 +7,10 @@ namespace BananaHumper.Gameplay
 {
     /// <summary>
     /// "Auflegen" (GDD 3.2): while the Cutter's machete is falling, the player
-    /// moves the shoulder under a shown centre-of-gravity marker. The resulting
-    /// misalignment becomes the persistent `offset` the BalanceController fights
-    /// for the rest of the trip.
+    /// moves the shoulder (A/D) under a shown centre-of-gravity marker. The
+    /// resulting misalignment becomes the persistent `offset` the
+    /// BalanceController fights for the rest of the trip. Mouse is intentionally
+    /// not used here - it is reserved for balancing only (see BalanceController).
     /// </summary>
     public class PlacementController : MonoBehaviour
     {
@@ -26,7 +27,7 @@ namespace BananaHumper.Gameplay
         {
             cutterWorldX = cutterX;
             if (shoulderMarker != null) shoulderMarker.position = new Vector3(cutterWorldX, shoulderMarker.position.y, 0f);
-            SetActive(false);
+            SetTargetMarkerActive(false);
         }
 
         public void BeginPlacement()
@@ -35,26 +36,37 @@ namespace BananaHumper.Gameplay
             running = StartCoroutine(PlacementRoutine());
         }
 
-        void SetActive(bool active)
+        /// <summary>
+        /// Nur die Zielmarkierung (Schwerpunkt-Anzeige, GDD 3.2) blinkt kurz auf.
+        /// shoulderMarker ist die Spielfigur selbst (siehe GameBootstrap) und muss
+        /// jederzeit sichtbar bleiben - sie hier mit zu deaktivieren wuerde die
+        /// gesamte Spielfigur samt Bananenstaude fuer den Rest des Trips ausblenden.
+        /// </summary>
+        void SetTargetMarkerActive(bool active)
         {
-            if (shoulderMarker != null) shoulderMarker.gameObject.SetActive(active);
             if (targetMarker != null) targetMarker.gameObject.SetActive(active);
         }
 
         IEnumerator PlacementRoutine()
         {
-            SetActive(true);
+            SetTargetMarkerActive(true);
 
             float targetOffsetWorld = UnityEngine.Random.Range(-config.placementZoneHalfWidth, config.placementZoneHalfWidth);
             float targetX = cutterWorldX + targetOffsetWorld;
             if (targetMarker != null) targetMarker.position = new Vector3(targetX, targetMarker.position.y, 0f);
 
+            // A/D bewegen die Schulter (Design-Entscheidung, ersetzt Maus-Steuerung
+            // aus GDD 3.2 [A]) - die Maus bleibt ausschliesslich fuers Balancieren
+            // reserviert (BalanceController.Tick liest Mouse X unabhaengig davon).
             float shoulderX = cutterWorldX;
             float elapsed = 0f;
             while (elapsed < config.placementTelegraphSeconds)
             {
-                float mouseWorldX = ScreenXToWorldX(Input.mousePosition.x);
-                shoulderX = Mathf.Clamp(mouseWorldX, cutterWorldX - config.placementZoneHalfWidth, cutterWorldX + config.placementZoneHalfWidth);
+                float moveInput = 0f;
+                if (Input.GetKey(KeyCode.D)) moveInput += 1f;
+                if (Input.GetKey(KeyCode.A)) moveInput -= 1f;
+                shoulderX = Mathf.Clamp(shoulderX + moveInput * config.walkSpeed * Time.deltaTime,
+                    cutterWorldX - config.placementZoneHalfWidth, cutterWorldX + config.placementZoneHalfWidth);
                 if (shoulderMarker != null) shoulderMarker.position = new Vector3(shoulderX, shoulderMarker.position.y, 0f);
 
                 elapsed += Time.deltaTime;
@@ -65,16 +77,8 @@ namespace BananaHumper.Gameplay
             float offset = Mathf.Clamp(rawOffset, -1f, 1f);
             bool sweetSpot = Mathf.Abs(offset) < config.sweetSpotOffset;
 
-            SetActive(false);
+            SetTargetMarkerActive(false);
             OnPlacementResolved?.Invoke(offset, sweetSpot);
-        }
-
-        float ScreenXToWorldX(float screenX)
-        {
-            Camera cam = Camera.main;
-            if (cam == null) return cutterWorldX;
-            Vector3 world = cam.ScreenToWorldPoint(new Vector3(screenX, Screen.height * 0.5f, -cam.transform.position.z));
-            return world.x;
         }
     }
 }

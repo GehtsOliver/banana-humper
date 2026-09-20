@@ -39,11 +39,21 @@ namespace BananaHumper.Gameplay
         [Header("Visuals")]
         public Transform playerRoot;
         public Transform bunchVisual;
+        public BananaBunchVisual bunchVisualController;
+        public PlayerAnimator playerAnimator;
         public float cutterX;
         public float trailerX;
 
         [Header("Run-Unlock (Platzhalter bis ProgressionSystem existiert)")]
         public bool runUnlocked = true;
+
+        /// <summary>
+        /// TEMPORAER (Nutzerwunsch): reduziert den Trip auf den reinen Core Loop
+        /// - kein Auflegen-Minispiel (GDD 3.2), die Staude liegt beim Trip-Start
+        /// direkt zentriert auf der Schulter. Fuer echten Content wieder auf
+        /// false setzen, dann laeuft wieder das volle Auflegen aus 3.2.
+        /// </summary>
+        public bool skipPlacement = true;
 
         public int Day { get; private set; } = 1;
         public TripPhase CurrentPhase { get; private set; }
@@ -121,26 +131,43 @@ namespace BananaHumper.Gameplay
         IEnumerator RunOneTrip()
         {
             currentBunch = BunchData.GenerateForDay(Day);
+            bunchVisualController?.Build(currentBunch.Length);
 
-            // --- Auflegen ---
-            CurrentPhase = TripPhase.Placement;
-            placementDone = false;
-            placement.BeginPlacement();
-            while (!placementDone) yield return null;
+            if (skipPlacement)
+            {
+                // TEMPORAER (Nutzerwunsch): reiner Core Loop, Staude liegt beim
+                // Trip-Start bereits mittig auf der Schulter, kein Auflegen-
+                // Minispiel. Fuer echten Content wieder auf false setzen.
+                CurrentPhase = TripPhase.Placement;
+                playerAnimator?.SetWalking(false, false);
+                placementOffset = 0f;
+            }
+            else
+            {
+                // --- Auflegen ---
+                CurrentPhase = TripPhase.Placement;
+                placementDone = false;
+                playerAnimator?.SetWalking(false, false);
+                placement.BeginPlacement();
+                while (!placementDone) yield return null;
+            }
 
             balance.BeginTrip(currentBunch, placementOffset);
 
             // --- Tragen zum Trailer ---
+            // Bewegung per A/D (Design-Entscheidung, ersetzt die automatische
+            // Bewegung aus GDD 3.1 [A]); Balancieren bleibt zusaetzlich per Maus
+            // (BalanceController.Tick liest Mouse X unabhaengig davon).
             CurrentPhase = TripPhase.Carrying;
             energyRanOutMidCarry = false;
-            float distance = 0f;
-            float total = Mathf.Abs(trailerX - cutterX);
-            float direction = Mathf.Sign(trailerX - cutterX);
+            float minX = Mathf.Min(cutterX, trailerX);
+            float maxX = Mathf.Max(cutterX, trailerX);
+            float playerX = cutterX;
+            playerAnimator?.SetFacing(trailerX < cutterX);
 
-            while (distance < total)
+            while (Mathf.Abs(playerX - trailerX) > 0.05f)
             {
                 float dt = Time.deltaTime;
-                bool running = runUnlocked && Input.GetMouseButton(0);
 
                 if (Input.GetMouseButtonDown(1) && balance.TryBeginReposition())
                 {
@@ -149,12 +176,26 @@ namespace BananaHumper.Gameplay
 
                 if (!balance.IsRepositioning)
                 {
+                    float moveInput = 0f;
+                    if (Input.GetKey(KeyCode.D)) moveInput += 1f;
+                    if (Input.GetKey(KeyCode.A)) moveInput -= 1f;
+                    bool running = runUnlocked && Input.GetMouseButton(0) && moveInput != 0f;
+
                     balance.Tick(dt, running);
                     energy.ConsumeCarrying(currentBunch.Weight, running, dt);
 
-                    float speed = config.walkSpeed * (running ? config.runSpeedMultiplier : 1f);
-                    distance += speed * dt;
-                    SetPlayerPosition(cutterX + direction * distance);
+                    if (moveInput != 0f)
+                    {
+                        float speed = config.walkSpeed * (running ? config.runSpeedMultiplier : 1f);
+                        playerX = Mathf.Clamp(playerX + moveInput * speed * dt, minX, maxX);
+                        SetPlayerPosition(playerX);
+                        playerAnimator?.SetFacing(moveInput < 0f);
+                    }
+                    playerAnimator?.SetWalking(moveInput != 0f, running);
+                }
+                else
+                {
+                    playerAnimator?.SetWalking(false, false);
                 }
 
                 UpdateBunchVisual();
@@ -196,6 +237,8 @@ namespace BananaHumper.Gameplay
         {
             float elapsed = 0f;
             float startX = playerRoot != null ? playerRoot.position.x : cutterX;
+            playerAnimator?.SetFacing(cutterX < startX);
+            playerAnimator?.SetWalking(true, false);
             while (elapsed < config.walkBackSeconds && !energy.IsDepleted)
             {
                 float dt = Time.deltaTime;
@@ -219,6 +262,7 @@ namespace BananaHumper.Gameplay
             economy.RegisterFailedTrip(currentBunch);
             energy.ApplyFallPenalty();
             summary.TripsFallen++;
+            playerAnimator?.ShowHurt();
             OnTripFallen?.Invoke();
         }
 
@@ -227,6 +271,7 @@ namespace BananaHumper.Gameplay
             economy.RegisterFailedTrip(currentBunch);
             energy.ApplySnapPenalty();
             summary.TripsSnapped++;
+            bunchVisualController?.SetSnapped();
             OnTripSnapped?.Invoke();
         }
 
@@ -240,6 +285,7 @@ namespace BananaHumper.Gameplay
             if (bunchVisual == null) return;
             bunchVisual.localRotation = Quaternion.Euler(0f, 0f, -balance.Theta * Mathf.Rad2Deg);
             bunchVisual.localPosition = new Vector3(balance.Offset * config.placementToleranceWorldUnits * 0.5f, bunchVisual.localPosition.y, 0f);
+            bunchVisualController?.UpdateStress(balance.Stress / 100f, balance.IsCreaking, balance.IsBending);
         }
     }
 }

@@ -41,7 +41,13 @@ namespace BananaHumper.Gameplay
             Omega = 0f;
             Stress = 0f;
             Offset = initialOffset;
-            stepPhase = 0f;
+            // Zufaellige Start-Phase statt immer 0: sonst liefert Sin(stepPhase)
+            // in jedem einzelnen Trip die ersten ~0.75s (bei stepFrequency=4)
+            // denselben deterministischen Schubs in dieselbe Richtung, bevor die
+            // Schwingung je ins Negative dreht - kombiniert mit der instabilen
+            // Sin(Theta)-Schwerkraft-Rueckkopplung kippt die Staude dadurch
+            // praktisch immer zur selben Seite, egal wie stark gegengelenkt wird.
+            stepPhase = UnityEngine.Random.Range(0f, 2f * Mathf.PI);
             pendingImpulse = 0f;
             IsActive = true;
             IsRepositioning = false;

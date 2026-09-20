@@ -100,7 +100,7 @@ Jedes Feature muss mindestens eine davon stärken, sonst fliegt es raus.
 | Genre | Rein aktives Incremental Game mit Balance-Physik und Prestige, ohne Idle-Anteil **[E]** |
 | Plattform | Steam (Windows) mit früher Steam-Seite und Steam-Demo; Web-Builds für private Tests und Webportale (Kapitel 16) **[E]** |
 | Engine | Unity 6 **[E]** |
-| Input | Nur Maus **[E]** |
+| Input | Maus (Auflegen, Balancieren) + `A`/`D` (Laufen) **[E]** |
 | Sprache | Englisch zum Release **[A]**, Deutsch [V2] **[A]** |
 | Monetarisierung | Steam Premium (Einmalkauf), keine Ads, keine In-App-Käufe **[E]** |
 | Preis Vollversion | 3–5 € **[A]** |
@@ -143,9 +143,9 @@ Spieler von kurzen, befriedigenden Incremental- und Roguelite-Spielen (Vampire S
 ### 3.1 Ablauf eines Trips [Demo]
 1. Die Figur steht beim Cutter. Die Staude hat ein zufälliges Gewicht und eine Länge (kurz, mittel, lang).
 2. **Auflegen:** Der Cutter schlägt ab, die Staude fällt. Der Spieler bringt die Schulter per Maus unter die Markierung des Schwerpunkts (siehe 3.2).
-3. Die Figur **läuft automatisch** Richtung Trailer **[A]**.
-4. Der Spieler hält die Staude mit der **Maus** im Gleichgewicht.
-5. **Linke Maustaste halten = rennen** (schneller, aber mehr Wackeln und mehr Energieverbrauch). Freigeschaltet über die Körper-Stufe „Rennen“ **[A]**.
+3. Die Figur wird per **`A`/`D`** Richtung Trailer bewegt **[E]** (ersetzt die ursprüngliche Annahme einer automatischen Bewegung).
+4. Gleichzeitig hält der Spieler die Staude mit der **Maus** im Gleichgewicht.
+5. **Linke Maustaste halten (während `A`/`D` gedrückt ist) = rennen** (schneller, aber mehr Wackeln und mehr Energieverbrauch). Freigeschaltet über die Körper-Stufe „Rennen“ **[A]**.
 6. **Rechte Maustaste = umsetzen:** Die Figur bleibt kurz stehen und rückt die Staude nach (siehe 3.5) **[A]**.
 7. Am Trailer wird automatisch abgeliefert: Geld gibt es sofort.
 8. Rückweg leer, automatisch und schnell (ca. 2 s) **[A]**.
