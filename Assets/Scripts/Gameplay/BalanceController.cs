@@ -21,6 +21,7 @@ namespace BananaHumper.Gameplay
         BunchData currentBunch;
         float stepPhase;
         float pendingImpulse;
+        float steerSmoothed;
 
         public float Theta { get; private set; }
         public float Omega { get; private set; }
@@ -49,6 +50,7 @@ namespace BananaHumper.Gameplay
             // praktisch immer zur selben Seite, egal wie stark gegengelenkt wird.
             stepPhase = UnityEngine.Random.Range(0f, 2f * Mathf.PI);
             pendingImpulse = 0f;
+            steerSmoothed = 0f;
             IsActive = true;
             IsRepositioning = false;
             HasFailed = false;
@@ -70,9 +72,17 @@ namespace BananaHumper.Gameplay
             float noise = (UnityEngine.Random.value * 2f - 1f) * config.wobbleNoise;
             float wobble = wobbleAmplitude * (Mathf.Sin(stepPhase) * 0.5f + noise);
 
-            // W/S (Unity-"Vertical"-Achse) statt Maus - Maus ist jetzt
-            // ausschliesslich fuers Rennen reserviert (siehe ShiftController).
-            float steerInput = Input.GetAxis("Vertical");
+            // Linke/rechte Maustaste halten (Nutzerentscheidung, ersetzt die
+            // kurzzeitige W/S-Loesung) - Rennen sitzt dafuer auf Shift, siehe
+            // ShiftController. Input.GetMouseButton liefert sofort volles +-1
+            // ohne Ramp (anders als Unity's Achsen-Smoothing), deshalb hier von
+            // Hand auf steerSmoothed eingeschwungen: dieselbe ~0.3s-Anlaufzeit,
+            // die vorher schon einmal verhindert hat, dass ein einzelner
+            // Tastendruck die Neigung sofort zum Ueberschiessen bringt.
+            float steerTarget = 0f;
+            if (Input.GetMouseButton(0)) steerTarget -= 1f;
+            if (Input.GetMouseButton(1)) steerTarget += 1f;
+            steerSmoothed = Mathf.MoveTowards(steerSmoothed, steerTarget, 3f * dt);
 
             float impulse = pendingImpulse;
             pendingImpulse = 0f;
@@ -80,7 +90,7 @@ namespace BananaHumper.Gameplay
             float alpha = config.gravityOverLength * Mathf.Sin(Theta) * weightFactor
                         + config.offsetTorque * Offset * weightFactor
                         - config.damping * Omega
-                        - config.controlStrength * steerInput
+                        - config.controlStrength * steerSmoothed
                         + wobble
                         + impulse;
 

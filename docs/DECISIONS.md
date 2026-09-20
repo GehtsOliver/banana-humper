@@ -56,6 +56,27 @@ bei gehaltener Taste dauerhaft auf 1 bleibt statt wie ein Mausschlag sofort
 wieder abzuklingen — ungetesteter erster Schätzwert, siehe
 `docs/PLAYTEST_LOG.md`.
 
+**Zurückgerollt** (siehe nächster Eintrag) — nach Test war die Neigung mit
+gehaltener Taste zu stark, `controlStrength` wurde erst auf 1.2 gesenkt,
+dann bat Olli direkt wieder um Maus-Steuerung.
+
+## 2026-09-20 — Balancieren zurück auf Maus, jetzt linke/rechte Maustaste statt Bewegung
+
+Nach dem W/S-Zwischenschritt (siehe oben) wollte Olli das Balancieren doch
+wieder auf der Maus haben, diesmal aber als Tastendruck (linke/rechte
+Maustaste halten) statt als Bewegungs-Delta wie ursprünglich in GDD 3.3.
+Rennen wanderte dafür von "linke Maustaste halten" auf `Shift` (die Maus
+ist ab der Carrying-Phase vollständig fürs Balancieren reserviert),
+"Umsetzen" bleibt auf `E`.
+
+**Begründung:** [E] von Olli. `Input.GetMouseButton` liefert sofort volles
+±1 ohne Anlaufzeit (anders als Unity's Achsen-Smoothing beim W/S-Versuch) -
+um das gerade erst behobene Überschießen nicht mit dem Tastenwechsel wieder
+einzuführen, glättet `BalanceController.Tick` den Tastendruck jetzt selbst
+über `steerSmoothed` (~0.3s Anlaufzeit, dieselbe Größenordnung wie vorher
+die Vertical-Achse). `controlStrength` bleibt vorerst bei 1.2, mit dieser
+Steuerung aber noch ungetestet.
+
 ## 2026-09 — Cutter-Figur ohne konkrete Hautfarbe/Gesichtszüge
 
 Bewusst abstrakt gehalten (prozedurale Form statt Figuren-Asset mit

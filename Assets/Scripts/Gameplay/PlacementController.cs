@@ -10,7 +10,8 @@ namespace BananaHumper.Gameplay
     /// moves the shoulder (A/D) under a shown centre-of-gravity marker. The
     /// resulting misalignment becomes the persistent `offset` the
     /// BalanceController fights for the rest of the trip. Mouse is intentionally
-    /// not used here - it is reserved for running only (see ShiftController).
+    /// not used here - it is reserved for balancing during Carrying (see
+    /// BalanceController).
     /// </summary>
     public class PlacementController : MonoBehaviour
     {
@@ -56,8 +57,9 @@ namespace BananaHumper.Gameplay
             if (targetMarker != null) targetMarker.position = new Vector3(targetX, targetMarker.position.y, 0f);
 
             // A/D bewegen die Schulter (Design-Entscheidung, ersetzt Maus-Steuerung
-            // aus GDD 3.2 [A]) - die Maus ist ausschliesslich fuers Rennen
-            // reserviert (siehe ShiftController).
+            // aus GDD 3.2 [A]) - die Maus ist waehrend Auflegen ungenutzt, sie
+            // ist erst ab der Carrying-Phase fuers Balancieren reserviert
+            // (siehe BalanceController.Tick).
             float shoulderX = cutterWorldX;
             float elapsed = 0f;
             while (elapsed < config.placementTelegraphSeconds)

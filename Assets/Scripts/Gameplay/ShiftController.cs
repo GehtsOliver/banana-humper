@@ -157,9 +157,10 @@ namespace BananaHumper.Gameplay
 
             // --- Tragen zum Trailer ---
             // Bewegung per A/D (Design-Entscheidung, ersetzt die automatische
-            // Bewegung aus GDD 3.1 [A]); Balancieren laeuft parallel per W/S
-            // (BalanceController.Tick liest die Vertical-Achse unabhaengig
-            // davon). Die Maus ist ausschliesslich fuers Rennen reserviert.
+            // Bewegung aus GDD 3.1 [A]); Balancieren laeuft parallel per
+            // linker/rechter Maustaste (BalanceController.Tick liest die
+            // Maustasten unabhaengig davon) - deshalb sitzt Rennen hier auf
+            // Shift statt auf der (jetzt fuers Balancieren belegten) Maus.
             CurrentPhase = TripPhase.Carrying;
             energyRanOutMidCarry = false;
             float minX = Mathf.Min(cutterX, trailerX);
@@ -171,8 +172,8 @@ namespace BananaHumper.Gameplay
             {
                 float dt = Time.deltaTime;
 
-                // E statt rechter Maustaste - Maus ist ausschliesslich fuers
-                // Rennen reserviert (Nutzerwunsch).
+                // E statt rechter Maustaste - die ist jetzt fuers
+                // Balancieren belegt (siehe BalanceController.Tick).
                 if (Input.GetKeyDown(KeyCode.E) && balance.TryBeginReposition())
                 {
                     energy.ApplyRepositionCost();
@@ -183,7 +184,7 @@ namespace BananaHumper.Gameplay
                     float moveInput = 0f;
                     if (Input.GetKey(KeyCode.D)) moveInput += 1f;
                     if (Input.GetKey(KeyCode.A)) moveInput -= 1f;
-                    bool running = runUnlocked && Input.GetMouseButton(0) && moveInput != 0f;
+                    bool running = runUnlocked && Input.GetKey(KeyCode.LeftShift) && moveInput != 0f;
 
                     balance.Tick(dt, running);
                     energy.ConsumeCarrying(currentBunch.Weight, running, dt);

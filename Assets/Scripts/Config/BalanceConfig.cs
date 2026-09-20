@@ -15,17 +15,15 @@ namespace BananaHumper.Config
         public float gravityOverLength = 4.0f;
         public float offsetTorque = 1.5f;
         public float damping = 1.2f;
-        // Steuert Unity's "Vertical"-Achse (W/S, siehe
-        // ProjectSettings/InputManager.asset), nicht mehr Input.GetAxis("Mouse X").
-        // Die Achse bleibt auf +-1 stehen, solange die Taste haengt, statt wie
-        // ein Mausschlag sofort wieder auf 0 zu fallen - dadurch baut sich bei
-        // gehaltener Taste kontinuierlich Drehimpuls auf (alpha wirkt jeden
-        // Frame). War testweise 3.5, aber Nutzer-Feedback: "Neigung faellt zu
-        // stark durch den Tastendruck" - bei 3.5 reicht schon eine halbe
-        // Sekunde Halten, um weit ueber die comfortAngle hinauszuschiessen.
-        // 1.2 macht kurze Taps noch spuerbar, ohne dass ein Tap gleich zum
-        // Umkippen in die Gegenrichtung fuehrt - naechster Tuning-Kandidat,
-        // falls es jetzt zu schwach ist.
+        // Steuert linke/rechte Maustaste (BalanceController.Tick), nicht mehr
+        // W/S oder Input.GetAxis("Mouse X"). Die Maustasten liefern sofort
+        // volles +-1 ohne Ramp, deshalb glaettet BalanceController das selbst
+        // ueber steerSmoothed (~0.3s Anlaufzeit) - ohne diese Glaettung waere
+        // der Effekt bei gleichem controlStrength noch heftiger als beim
+        // vorherigen W/S-Versuch. War dort testweise 3.5, aber Nutzer-Feedback:
+        // "Neigung faellt zu stark durch den Tastendruck" - 1.2 macht kurze
+        // Klicks noch spuerbar, ohne sofort zum Umkippen zu fuehren. Mit den
+        // Maustasten weiterhin ungetestet - naechster Tuning-Kandidat.
         public float controlStrength = 1.2f;
         public float wobbleWalk = 0.6f;
         public float wobbleRun = 1.5f;

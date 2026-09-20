@@ -50,18 +50,16 @@ anlegen, `GameBootstrap`-Komponente draufziehen, oder das Menü
 
 ## Steuerung
 
-Die Maus wird bewusst nur noch fürs Rennen benutzt (Nutzerentscheidung,
-weicht von GDD 3.3 ab, siehe [docs/DECISIONS.md](docs/DECISIONS.md)); alle
-Bewegungs- und Balance-Eingaben laufen über die Tastatur.
-
 - **Auflegen:** `A`/`D`, um die Schulter unter die rote Zielmarkierung zu
   bringen, bevor die Staude fällt.
 - **Tragen - Laufen:** `A`/`D` zum Trailer bzw. zurück (ersetzt die
   automatische Bewegung aus GDD 3.1 [A] - bewusste Design-Entscheidung).
-- **Tragen - Balancieren:** zusätzlich, gleichzeitig zum Laufen, `W`/`S`
-  halten, um die Staude auszugleichen (ersetzt die Maus aus GDD 3.3).
-- **Linke Maustaste halten (während `A`/`D` gedrückt ist):** rennen
-  (schneller, mehr Wackeln, mehr Energieverbrauch).
+- **Tragen - Balancieren:** zusätzlich, gleichzeitig zum Laufen, linke/
+  rechte Maustaste halten, um die Staude auszugleichen (GDD 3.3, siehe
+  [docs/DECISIONS.md](docs/DECISIONS.md) für die Zwischenstationen dieser
+  Steuerung).
+- **Linke Umschalttaste (Shift) halten (während `A`/`D` gedrückt ist):**
+  rennen (schneller, mehr Wackeln, mehr Energieverbrauch).
 - **`E`:** umsetzen (kurzer Stillstand, reduziert den Auflage-Versatz,
   kostet Energie).
 - Schicht endet automatisch, wenn die Energie leer ist; Button im
