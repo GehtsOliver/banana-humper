@@ -126,7 +126,7 @@ namespace BananaHumper.Gameplay
 
             foreach (var station in stations)
             {
-                if (station != null) station.Tick(dt);
+                if (station != null) station.Tick(dt, HumperIsReadyAt(station));
             }
             trailer.Tick(dt);
             player.Tick(dt);
@@ -134,6 +134,19 @@ namespace BananaHumper.Gameplay
             if (player.IsCarrying) TickCarrying(dt);
 
             if (energy.IsDepleted) EndShift();
+        }
+
+        /// <summary>
+        /// Steht der Humper mit freien Haenden still unter dieser Staude? Dann
+        /// schlaegt der Cutter frueher ab (GDD 3.2). Bewusst an "steht still"
+        /// geknuepft und nicht bloss an die Naehe - sonst wuerde jedes
+        /// Vorbeilaufen unterwegs ungewollt Stauden ausloesen.
+        /// </summary>
+        bool HumperIsReadyAt(CutterStation station)
+        {
+            if (player.IsCarrying || player.IsMoving || !player.IsGrounded) return false;
+            float reach = config.catchRadius * config.normalCatchFraction;
+            return Mathf.Abs(player.PositionX - station.DropPosition.x) <= reach;
         }
 
         void TickCarrying(float dt)

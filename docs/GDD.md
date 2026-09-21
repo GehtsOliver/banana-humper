@@ -157,13 +157,20 @@ Spieler von kurzen, befriedigenden Incremental- und Roguelite-Spielen (Vampire S
 
 **Die Entscheidung, die sich ständig wiederholt:** Welche Station als Nächstes? Die schwere Staude am anderen Ende bringt mehr Geld, kostet aber mehr Energie und lässt dich zwei nähere Balken verpassen. Schwer ist damit nicht automatisch besser, sondern eine Wette.
 
-### 3.2 Cutter-Stationen und Balken [Demo] **[A]**
-- Start: **4 Stationen**, verteilt über die Reihe, im Editor frei platzierbar.
-- Jede Station füllt ihren Balken in `schnittzeit` Sekunden. Voll: Machete runter, Staude fällt.
-- Eine abgeerntete Station pausiert kurz (`nachwachsPause`) und hängt dann eine neue Zufallsstaude auf, der Balken beginnt von vorn.
+### 3.2 Cutter-Stationen und Geduld [Demo] **[E]**
+- Start: **6 Stationen**, verteilt über die Reihe, im Editor frei platzierbar.
+- Der Balken über einer Station ist die **Geduld des Cutters**, kein reiner Timer. Daraus ergeben sich zwei Wege, wie eine Staude fällt:
+  - **Geduld abgelaufen:** Er schlägt ab, egal wo der Humper steckt. Wer nicht da ist, verliert die Staude — das ist das Risiko.
+  - **Humper steht bereit:** Steht der Humper mit freien Händen still unter der Staude, schlägt der Cutter sofort ab. Das ist der freiwillige, sichere Weg.
+- Bewusst an „steht still“ geknüpft, nicht bloß an Nähe: Sonst würde jedes Vorbeilaufen unterwegs Stauden auslösen.
+- **Temperamente:** Jeder Cutter ist unterschiedlich geduldig (`ungeduldig` ×0,55 · `normal` ×1,0 · `geduldig` ×1,7 auf die Basisgeduld). Erst dadurch entsteht echte Priorisierung: Die Ungeduldigen drängen, die Geduldigen kann man aufsparen.
+- Die Cutter starten zeitlich versetzt, damit die Schicht einen Rhythmus hat statt in Wellen zu laufen.
+- Eine abgeerntete Station pausiert kurz (`nachwachsPause`) und hängt dann eine neue Zufallsstaude auf, die Geduld beginnt von vorn.
 - Der Balken hängt **in der Welt über der Station**, nicht im HUD: Der Blick soll dort bleiben, wo die Entscheidung fällt.
-- Ab 70 % färbt sich der Balken, damit „gleich fällt sie“ auf einen Blick erkennbar ist.
+- Ab 70 % färbt sich der Balken; steht der Humper bereit, wechselt er die Farbe.
 - Die Staude hängt sichtbar an der Station. Größe und Dicke verraten vorab, was sie einbringt und was sie kostet (4.3).
+
+**Was das für den Loop bedeutet:** Vorher war der Balken nur eine Uhr, an der man hinterherlief. Jetzt ist er eine Verhandlung — man kann Stauden aktiv abrufen und damit die Reihenfolge selbst bestimmen, zahlt aber mit der Zeit, die man beim Warten verliert.
 
 ### 3.3 Fangen [Demo] **[E]**
 - Nach dem Abschlagen fällt die Staude in `fallzeit` Sekunden auf Schulterhöhe. Das ist das Zeitfenster zum Hinlaufen.
@@ -211,8 +218,11 @@ Simulation pro Frame (wie v0.8, ohne Belastungs-Teil):
 ### 3.6 Startwerte (zum Tunen, Balance-Config als ScriptableObject) [Demo] **[A]**
 | Parameter | Startwert | Bemerkung |
 |---|---|---|
-| Stationen | 4 | in der Szene platzierbar |
-| schnittzeit | 8–14 s, je Staude zufällig | unterschiedliche Tempi ergeben Priorisierung |
+| Stationen | 6 | in der Szene platzierbar |
+| Paddock-Breite | 26 m (−6 bis 20) | ganze Reihe bleibt im Bild |
+| Basisgeduld | 8–14 s, je Staude zufällig | mal Temperament (3.2) |
+| Temperamente | ×0,55 / ×1,0 / ×1,7 | ungeduldig / normal / geduldig |
+| Bereitstehen bis Schnitt | 0,25 s | Humper still unter der Staude |
 | nachwachsPause | 3 s | |
 | fallzeit | 1,2 s | Zeitfenster zum Hinlaufen |
 | fangradius | 1,0 m | |

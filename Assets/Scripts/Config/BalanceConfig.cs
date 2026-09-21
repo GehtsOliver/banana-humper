@@ -13,13 +13,24 @@ namespace BananaHumper.Config
     [CreateAssetMenu(fileName = "BalanceConfig", menuName = "BananaHumper/Balance Config")]
     public class BalanceConfig : ScriptableObject
     {
-        [Header("Stationen (3.2)")]
-        [Tooltip("Zeit, bis der Balken einer Station voll ist und die Staude faellt.")]
-        public float cutSecondsMin = 8f;
-        public float cutSecondsMax = 14f;
+        [Header("Cutter-Geduld (3.2)")]
+        // Der Balken ueber dem Cutter ist seine Geduld: Laeuft sie ab, schlaegt
+        // er ab, egal wo der Humper gerade steht. Steht der Humper vorher
+        // bereit, schlaegt er sofort ab - das ist der freiwillige, sichere Weg.
+        [Tooltip("Basis-Geduld eines Cutters. Je Station mit dem Temperament multipliziert.")]
+        public float patienceSecondsMin = 8f;
+        public float patienceSecondsMax = 14f;
+        [Tooltip("So lange muss man still unter der Staude stehen, damit der Cutter frueher abschlaegt.")]
+        public float readyToCutSeconds = 0.25f;
         [Tooltip("Pause, bis eine abgeerntete Station eine neue Staude aufhaengt.")]
         public float regrowSeconds = 3f;
         [Range(0f, 1f)] public float barWarningFraction = 0.7f;
+
+        [Header("Temperamente (3.2)")]
+        [Tooltip("Multiplikator auf die Geduld - kleiner heisst ungeduldiger.")]
+        public float patienceImpatient = 0.55f;
+        public float patienceNormal = 1.0f;
+        public float patiencePatient = 1.7f;
 
         [Header("Fangen (3.3)")]
         [Tooltip("Falldauer von der Station bis auf Schulterhoehe - das Zeitfenster zum Hinlaufen.")]
@@ -101,6 +112,9 @@ namespace BananaHumper.Config
         public float MaxAngleRad => maxAngleDeg * Mathf.Deg2Rad;
         public float RedWarningAngleRad => MaxAngleRad * redWarningFraction;
 
-        public float RandomCutSeconds() => Random.Range(cutSecondsMin, cutSecondsMax);
+        public float RandomPatienceSeconds(float temperamentMultiplier)
+        {
+            return Random.Range(patienceSecondsMin, patienceSecondsMax) * temperamentMultiplier;
+        }
     }
 }

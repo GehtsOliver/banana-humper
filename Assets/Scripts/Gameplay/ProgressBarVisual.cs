@@ -13,6 +13,8 @@ namespace BananaHumper.Gameplay
         static readonly Color BackgroundColor = new Color(0f, 0f, 0f, 0.55f);
         static readonly Color NormalColor = new Color(0.55f, 0.8f, 0.35f);
         static readonly Color WarningColor = new Color(0.95f, 0.45f, 0.15f);
+        /// <summary>Humper steht bereit, der Cutter schlaegt gleich freiwillig ab (GDD 3.2).</summary>
+        static readonly Color ReadyColor = new Color(0.45f, 0.85f, 0.95f);
 
         const float Width = 1.1f;
         const float Height = 0.16f;
@@ -46,15 +48,25 @@ namespace BananaHumper.Gameplay
             SetProgress(0f);
         }
 
+        bool ready;
+
         public void SetProgress(float progress01)
         {
             if (fill == null) return;
             float p = Mathf.Clamp01(progress01);
             fill.localScale = new Vector3(p, 1f, 1f);
-            if (fillRenderer != null)
+            if (fillRenderer != null && !ready)
             {
                 fillRenderer.color = p >= warningFraction ? WarningColor : NormalColor;
             }
+        }
+
+        /// <summary>Faerbt den Balken um, solange der Humper bereitsteht.</summary>
+        public void SetReady(bool isReady)
+        {
+            if (ready == isReady) return;
+            ready = isReady;
+            if (fillRenderer != null && ready) fillRenderer.color = ReadyColor;
         }
 
         public void SetVisible(bool visible)

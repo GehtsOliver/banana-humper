@@ -25,13 +25,26 @@ namespace BananaHumper.EditorTools
     {
         const string ScenePath = "Assets/Scenes/Main.unity";
 
-        const float RowMinX = -4f;
-        const float RowMaxX = 14f;
-        const float TrailerX = 12f;
+        const float RowMinX = -6f;
+        const float RowMaxX = 20f;
+        const float TrailerX = 9f;
         const float BunchHangHeight = 2.6f;
 
-        /// <summary>Startaufstellung der Stationen (GDD 3.2: 4 Stueck, unterschiedlich weit auseinander).</summary>
-        static readonly float[] StationX = { -2.5f, 1.5f, 5.5f, 10f };
+        /// <summary>
+        /// Startaufstellung der Stationen (GDD 3.2). Sechs Cutter auf einem
+        /// groesseren Paddock, mit ungleichen Abstaenden und gemischten
+        /// Temperamenten: Die ungeduldigen liegen bewusst weit auseinander,
+        /// damit man sie nicht nebenbei mitnehmen kann.
+        /// </summary>
+        static readonly (float x, CutterTemperament temperament)[] Stations =
+        {
+            (-4.5f, CutterTemperament.Geduldig),
+            (-0.5f, CutterTemperament.Normal),
+            (3.5f, CutterTemperament.Ungeduldig),
+            (8.0f, CutterTemperament.Normal),
+            (13.0f, CutterTemperament.Ungeduldig),
+            (18.0f, CutterTemperament.Geduldig),
+        };
 
         /// <summary>
         /// Steine (GDD 3.9), bewusst zwischen den Stationen statt darauf: Sie
@@ -40,10 +53,12 @@ namespace BananaHumper.EditorTools
         /// </summary>
         static readonly (float x, float halfWidth, float clearHeight)[] Rocks =
         {
-            (-0.6f, 0.30f, 0.45f),
-            (3.4f, 0.38f, 0.60f),
-            (7.9f, 0.28f, 0.40f),
-            (11.6f, 0.34f, 0.55f),
+            (-2.6f, 0.30f, 0.45f),
+            (1.6f, 0.38f, 0.60f),
+            (5.8f, 0.28f, 0.40f),
+            (10.6f, 0.34f, 0.55f),
+            (15.4f, 0.32f, 0.50f),
+            (19.0f, 0.36f, 0.58f),
         };
 
         [MenuItem("BananaHumper/Bootstrap-Szene erzeugen")]
@@ -75,9 +90,9 @@ namespace BananaHumper.EditorTools
 
             var stationsRoot = new GameObject("Stations").transform;
             var stations = new List<CutterStation>();
-            for (int i = 0; i < StationX.Length; i++)
+            for (int i = 0; i < Stations.Length; i++)
             {
-                stations.Add(CreateStation(stationsRoot, i, StationX[i]));
+                stations.Add(CreateStation(stationsRoot, i, Stations[i].x, Stations[i].temperament));
             }
 
             var obstaclesRoot = new GameObject("Obstacles").transform;
@@ -108,9 +123,13 @@ namespace BananaHumper.EditorTools
             camGo.tag = "MainCamera";
             var cam = camGo.AddComponent<Camera>();
             cam.orthographic = true;
-            cam.orthographicSize = Mathf.Max(4f, (RowMaxX - RowMinX) * 0.34f);
+            // Faktor 0.3 zeigt bei 16:9 rund 27,7 Einheiten Breite - die ganze
+            // Reihe plus etwas Rand. Die volle Uebersicht ist Absicht: Man soll
+            // alle Geduldsbalken gleichzeitig sehen, sonst gibt es nichts zu
+            // priorisieren (GDD 12, Kernfrage des Graybox-Tests).
+            cam.orthographicSize = Mathf.Max(4f, (RowMaxX - RowMinX) * 0.3f);
             cam.backgroundColor = new Color(0.55f, 0.75f, 0.9f);
-            camGo.transform.position = new Vector3((RowMinX + RowMaxX) * 0.5f, 0.9f, -10f);
+            camGo.transform.position = new Vector3((RowMinX + RowMaxX) * 0.5f, 1.8f, -10f);
         }
 
         /// <summary>
@@ -119,9 +138,9 @@ namespace BananaHumper.EditorTools
         /// GameBootstrap zur Laufzeit darunter, ihre Textur waere in einer
         /// Szenendatei nicht speicherbar.
         /// </summary>
-        static CutterStation CreateStation(Transform parent, int index, float x)
+        static CutterStation CreateStation(Transform parent, int index, float x, CutterTemperament temperament)
         {
-            var go = new GameObject($"Station{index}");
+            var go = new GameObject($"Station{index}_{temperament}");
             go.transform.SetParent(parent, false);
             go.transform.position = new Vector3(x, GameBootstrap.GroundY, 0f);
 
@@ -138,6 +157,7 @@ namespace BananaHumper.EditorTools
             var station = go.AddComponent<CutterStation>();
             station.bunchAnchor = bunchAnchor;
             station.bar = bar;
+            station.temperament = temperament;
             return station;
         }
 

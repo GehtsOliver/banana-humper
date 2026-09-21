@@ -3,6 +3,7 @@ using UnityEngine.UI;
 using UnityEngine.EventSystems;
 using BananaHumper.Config;
 using BananaHumper.Gameplay;
+using BananaHumper.Util;
 
 namespace BananaHumper.UI
 {
@@ -23,6 +24,7 @@ namespace BananaHumper.UI
         Text angleText;
         Text bunchText;
         Text catchText;
+        Text energyText;
         Image energyFill;
         float catchTextTimer;
         GameObject endPanel;
@@ -68,6 +70,7 @@ namespace BananaHumper.UI
             var canvasGo = new GameObject("HUD Canvas");
             var canvas = canvasGo.AddComponent<Canvas>();
             canvas.renderMode = RenderMode.ScreenSpaceOverlay;
+            canvas.sortingOrder = 100;
             var scaler = canvasGo.AddComponent<CanvasScaler>();
             scaler.uiScaleMode = CanvasScaler.ScaleMode.ScaleWithScreenSize;
             scaler.referenceResolution = new Vector2(1280, 720);
@@ -82,7 +85,8 @@ namespace BananaHumper.UI
             catchText = CreateText(root, "CatchText", new Vector2(20, -150), TextAnchor.UpperLeft, 26);
             catchText.text = string.Empty;
 
-            energyFill = CreateBar(root, "EnergyBar", new Vector2(20, -190), new Color(0.15f, 0.6f, 0.2f));
+            energyText = CreateText(root, "EnergyText", new Vector2(20, -185), TextAnchor.UpperLeft, 22);
+            energyFill = CreateBar(root, "EnergyBar", new Vector2(20, -215), new Color(0.15f, 0.6f, 0.2f));
 
             BuildEndPanel(root);
 
@@ -121,7 +125,11 @@ namespace BananaHumper.UI
             bgRt.anchoredPosition = anchoredPos;
             bgRt.sizeDelta = new Vector2(220, 20);
             var bgImg = bgGo.AddComponent<Image>();
-            bgImg.color = new Color(0f, 0f, 0f, 0.5f);
+            // Ohne Sprite zeichnet ein Image mit Type.Filled gar nichts - genau
+            // daran war der Energiebalken vorher unsichtbar. SpriteFactory.Square
+            // liefert ein echtes 1-Farb-Sprite als Untergrund.
+            bgImg.sprite = SpriteFactory.Square();
+            bgImg.color = new Color(0f, 0f, 0f, 0.55f);
 
             var fillGo = new GameObject(name + "_Fill");
             fillGo.transform.SetParent(bgGo.transform, false);
@@ -131,6 +139,7 @@ namespace BananaHumper.UI
             fillRt.offsetMin = Vector2.zero;
             fillRt.offsetMax = Vector2.zero;
             var fillImg = fillGo.AddComponent<Image>();
+            fillImg.sprite = SpriteFactory.Square();
             fillImg.color = fillColor;
             fillImg.type = Image.Type.Filled;
             fillImg.fillMethod = Image.FillMethod.Horizontal;
@@ -243,7 +252,12 @@ namespace BananaHumper.UI
 
             if (energy != null && energyFill != null)
             {
-                energyFill.fillAmount = energy.Max > 0f ? energy.Current / energy.Max : 0f;
+                float fraction = energy.Max > 0f ? energy.Current / energy.Max : 0f;
+                energyFill.fillAmount = fraction;
+                energyFill.color = fraction < 0.25f
+                    ? new Color(0.85f, 0.35f, 0.15f)
+                    : new Color(0.15f, 0.6f, 0.2f);
+                energyText.text = $"Energie {energy.Current:0} / {energy.Max:0}";
             }
         }
     }

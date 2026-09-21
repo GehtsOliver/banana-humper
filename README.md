@@ -60,8 +60,8 @@ Laufzeit.
 
 | Objekt | Bedeutung |
 |---|---|
-| `Stations/Station0..3` | **Das Level-Design:** Die Abstände zwischen den Stationen bestimmen, wie weit man laufen muss – der wichtigste Tuning-Hebel des Kern-Loops |
-| `Obstacles/Rock0..3` | Steine zum Überspringen. Höhe und Breite stehen im `Obstacle`-Inspector; die sichtbare Form richtet sich danach |
+| `Stations/Station0..5` | **Das Level-Design:** Die Abstände zwischen den Stationen bestimmen, wie weit man laufen muss – der wichtigste Tuning-Hebel des Kern-Loops. Das Temperament (ungeduldig/normal/geduldig) steht im `CutterStation`-Inspector |
+| `Obstacles/Rock0..5` | Steine zum Überspringen. Höhe und Breite stehen im `Obstacle`-Inspector; die sichtbare Form richtet sich danach |
 | `Player` | Startposition der Spielfigur |
 | `Player > BunchVisual` | Auflagepunkt der Staude auf der Schulter |
 | `Trailer` | Startposition des Trailers (fährt zur Laufzeit die Reihe entlang) |
@@ -85,10 +85,12 @@ sieht das Ergebnis nur erst beim Drücken von Play.
 - **Laufen:** `A`/`D` durch die Reihe.
 - **Rennen:** `Shift` halten (schneller, mehr Wackeln, mehr Energie – aber
   nur mit Staude kostet Laufen überhaupt Energie).
-- **Springen:** `Leertaste`. In der Reihe liegen vier Steine; dagegenlaufen
+- **Springen:** `Leertaste`. In der Reihe liegen sechs Steine; dagegenlaufen
   kostet Tempo, und mit Staude zusätzlich Energie und einen kräftigen
   Wackler.
-- **Fangen:** rechtzeitig unter der fallenden Staude stehen. Je mittiger,
+- **Fangen:** rechtzeitig unter der fallenden Staude stehen. Stehst du mit
+  freien Händen **still** unter einer hängenden Staude, schlägt der Cutter
+  sofort ab – so holst du dir Stauden aktiv, statt auf seine Geduld zu warten. Je mittiger,
   desto besser: perfekt = kein Versatz, Streifer = −25 % Lohn und starker
   Versatz.
 - **Tragen - Ausgleichen:** linke/rechte Maustaste halten, um die Staude
@@ -104,8 +106,8 @@ sieht das Ergebnis nur erst beim Drücken von Play.
 |---|---|---|
 | `Config/BalanceConfig.cs` | 3.6 | Tuning-Werte als ScriptableObject |
 | `Gameplay/BunchData.cs` | 4.3 | Stufenlos zufälliges Gewicht/Länge pro Staude, Dicke daraus abgeleitet |
-| `Gameplay/CutterStation.cs` | 3.2 | Eine Station: Balken füllen, abschlagen, nachwachsen |
-| `Gameplay/ProgressBarVisual.cs` | 3.2 | Schnitt-Balken über der Station (in der Welt, nicht im HUD) |
+| `Gameplay/CutterStation.cs` | 3.2 | Geduld des Cutters, Abschlagen (automatisch oder auf Zuruf), Nachwachsen |
+| `Gameplay/ProgressBarVisual.cs` | 3.2 | Geduldsbalken über der Station (in der Welt, nicht im HUD) |
 | `Gameplay/FallingBunch.cs` | 3.3 | Fallende Staude, meldet den Aufprall |
 | `Gameplay/PlayerController.cs` | 3.1 | Freie Bewegung in der Reihe, Tragezustand |
 | `Gameplay/TrailerController.cs` | 3.5 | Mitfahrender Trailer, Ablieferung |
