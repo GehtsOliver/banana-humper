@@ -78,6 +78,11 @@ namespace BananaHumper.Config
         public float runSpeedMultiplier = 1.6f;
 
         [Header("Springen und Hindernisse (3.9)")]
+        [Tooltip("Wie viele Steine pro Schicht zufaellig in der Reihe liegen.")]
+        public int rockCountMin = 2;
+        public int rockCountMax = 3;
+        [Tooltip("Mindestabstand eines Steins zu einer Station und zu anderen Steinen.")]
+        public float rockMinDistance = 2.2f;
         // 7.0 bei jumpGravity 20 ergibt 1,22 m Sprunghoehe und 0,7 s Flugzeit.
         // Ueber dem hoechsten Stein (0,6 m) ist man davon rund 0,5 s, im Gehen
         // also etwa 1,0 m Strecke - genug Puffer fuer einen 0,76 m breiten

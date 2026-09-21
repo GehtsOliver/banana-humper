@@ -26,39 +26,26 @@ namespace BananaHumper.EditorTools
         const string ScenePath = "Assets/Scenes/Main.unity";
 
         const float RowMinX = -6f;
-        const float RowMaxX = 20f;
-        const float TrailerX = 9f;
+        const float RowMaxX = 26f;  // Szenen-Ausdehnung inkl. aller anheuerbaren Cutter; aktiv ist nur bis zum letzten angeheuerten
+        const float TrailerX = 5f;   // innerhalb der Reihe, die mit nur zwei Cuttern noch kurz ist
         const float BunchHangHeight = 2.6f;
 
         /// <summary>
-        /// Startaufstellung der Stationen (GDD 3.2). Sechs Cutter auf einem
-        /// groesseren Paddock, mit ungleichen Abstaenden und gemischten
-        /// Temperamenten: Die ungeduldigen liegen bewusst weit auseinander,
-        /// damit man sie nicht nebenbei mitnehmen kann.
+        /// Sechs Stationsplaetze, aber nur die ersten zwei sind angeheuert (GDD
+        /// 3.2, 5.2). Die restlichen stehen schon in der Szene und werden
+        /// spaeter im Shop freigeschaltet - das Paddock waechst also mit der
+        /// Mannschaft, weil GameBootstrap die Reihe am letzten angeheuerten
+        /// Cutter enden laesst. Temperamente sind gemischt, damit es von Anfang
+        /// an etwas zu priorisieren gibt.
         /// </summary>
-        static readonly (float x, CutterTemperament temperament)[] Stations =
+        static readonly (float x, CutterTemperament temperament, bool hired)[] Stations =
         {
-            (-4.5f, CutterTemperament.Geduldig),
-            (-0.5f, CutterTemperament.Normal),
-            (3.5f, CutterTemperament.Ungeduldig),
-            (8.0f, CutterTemperament.Normal),
-            (13.0f, CutterTemperament.Ungeduldig),
-            (18.0f, CutterTemperament.Geduldig),
-        };
-
-        /// <summary>
-        /// Steine (GDD 3.9), bewusst zwischen den Stationen statt darauf: Sie
-        /// sollen die Laufwege stoeren, nicht das Fangen unmoeglich machen.
-        /// Unterschiedliche Groessen, damit nicht jeder Sprung gleich aussieht.
-        /// </summary>
-        static readonly (float x, float halfWidth, float clearHeight)[] Rocks =
-        {
-            (-2.6f, 0.30f, 0.45f),
-            (1.6f, 0.38f, 0.60f),
-            (5.8f, 0.28f, 0.40f),
-            (10.6f, 0.34f, 0.55f),
-            (15.4f, 0.32f, 0.50f),
-            (19.0f, 0.36f, 0.58f),
+            (-2.0f, CutterTemperament.Normal, true),
+            (3.0f, CutterTemperament.Ungeduldig, true),
+            (8.0f, CutterTemperament.Geduldig, false),
+            (13.0f, CutterTemperament.Normal, false),
+            (18.0f, CutterTemperament.Ungeduldig, false),
+            (23.0f, CutterTemperament.Geduldig, false),
         };
 
         [MenuItem("BananaHumper/Bootstrap-Szene erzeugen")]
@@ -82,7 +69,7 @@ namespace BananaHumper.EditorTools
         {
             var scene = EditorSceneManager.NewScene(NewSceneSetup.EmptyScene, NewSceneMode.Single);
 
-            CreateCamera();
+            var cameraController = CreateCamera();
             CreateScenery();
 
             var player = CreatePlayer();
@@ -92,24 +79,19 @@ namespace BananaHumper.EditorTools
             var stations = new List<CutterStation>();
             for (int i = 0; i < Stations.Length; i++)
             {
-                stations.Add(CreateStation(stationsRoot, i, Stations[i].x, Stations[i].temperament));
+                stations.Add(CreateStation(stationsRoot, i, Stations[i].x, Stations[i].temperament, Stations[i].hired));
             }
 
-            var obstaclesRoot = new GameObject("Obstacles").transform;
-            var obstacles = new List<Obstacle>();
-            for (int i = 0; i < Rocks.Length; i++)
-            {
-                obstacles.Add(CreateRock(obstaclesRoot, i, Rocks[i]));
-            }
+            // Steine liegen nicht mehr in der Szene: Sie werden pro Schicht
+            // zufaellig gesetzt (GDD 3.9), damit die Wege sich unterscheiden.
 
             var bootstrapGo = new GameObject("GameBootstrap");
             var bootstrap = bootstrapGo.AddComponent<GameBootstrap>();
             bootstrap.player = player;
             bootstrap.trailer = trailer;
+            bootstrap.cameraController = cameraController;
             bootstrap.stations = stations;
-            bootstrap.obstacles = obstacles;
             bootstrap.rowMinX = RowMinX;
-            bootstrap.rowMaxX = RowMaxX;
 
             Directory.CreateDirectory("Assets/Scenes");
             EditorSceneManager.SaveScene(scene, ScenePath);
@@ -117,19 +99,28 @@ namespace BananaHumper.EditorTools
             Debug.Log($"SceneSetupTool: {ScenePath} im Hybrid-Aufbau erzeugt.");
         }
 
-        static void CreateCamera()
+        /// <summary>
+        /// Feste Zoomstufe statt "ganze Reihe ins Bild": Die Kamera faehrt jetzt
+        /// mit (CameraController), damit das Paddock mit jedem angeheuerten
+        /// Cutter wachsen kann. Stationen ausserhalb des Bildes zeigt das HUD am
+        /// Rand an, sonst gaebe es nichts mehr zu priorisieren (GDD 12).
+        /// Solange nur wenige Cutter angeheuert sind, zentriert der Controller
+        /// von selbst - man sieht dann ohnehin alles.
+        /// </summary>
+        static CameraController CreateCamera()
         {
             var camGo = new GameObject("Main Camera");
             camGo.tag = "MainCamera";
             var cam = camGo.AddComponent<Camera>();
             cam.orthographic = true;
-            // Faktor 0.3 zeigt bei 16:9 rund 27,7 Einheiten Breite - die ganze
-            // Reihe plus etwas Rand. Die volle Uebersicht ist Absicht: Man soll
-            // alle Geduldsbalken gleichzeitig sehen, sonst gibt es nichts zu
-            // priorisieren (GDD 12, Kernfrage des Graybox-Tests).
-            cam.orthographicSize = Mathf.Max(4f, (RowMaxX - RowMinX) * 0.3f);
+            cam.orthographicSize = 5.5f;
             cam.backgroundColor = new Color(0.55f, 0.75f, 0.9f);
-            camGo.transform.position = new Vector3((RowMinX + RowMaxX) * 0.5f, 1.8f, -10f);
+            camGo.transform.position = new Vector3(0f, 1.4f, -10f);
+
+            var controller = camGo.AddComponent<CameraController>();
+            controller.minX = RowMinX;
+            controller.maxX = RowMaxX;
+            return controller;
         }
 
         /// <summary>
@@ -138,9 +129,9 @@ namespace BananaHumper.EditorTools
         /// GameBootstrap zur Laufzeit darunter, ihre Textur waere in einer
         /// Szenendatei nicht speicherbar.
         /// </summary>
-        static CutterStation CreateStation(Transform parent, int index, float x, CutterTemperament temperament)
+        static CutterStation CreateStation(Transform parent, int index, float x, CutterTemperament temperament, bool hired)
         {
-            var go = new GameObject($"Station{index}_{temperament}");
+            var go = new GameObject($"Station{index}_{temperament}{(hired ? "" : "_NichtAngeheuert")}");
             go.transform.SetParent(parent, false);
             go.transform.position = new Vector3(x, GameBootstrap.GroundY, 0f);
 
@@ -158,24 +149,8 @@ namespace BananaHumper.EditorTools
             station.bunchAnchor = bunchAnchor;
             station.bar = bar;
             station.temperament = temperament;
+            station.isHired = hired;
             return station;
-        }
-
-        /// <summary>
-        /// Ein Stein als verschiebbares Szenen-Objekt. Die Form baut
-        /// GameBootstrap zur Laufzeit aus halfWidth/clearHeight - was man sieht,
-        /// ist damit genau das, woran man haengenbleibt.
-        /// </summary>
-        static Obstacle CreateRock(Transform parent, int index, (float x, float halfWidth, float clearHeight) spec)
-        {
-            var go = new GameObject($"Rock{index}");
-            go.transform.SetParent(parent, false);
-            go.transform.position = new Vector3(spec.x, GameBootstrap.GroundY, 0f);
-
-            var obstacle = go.AddComponent<Obstacle>();
-            obstacle.halfWidth = spec.halfWidth;
-            obstacle.clearHeight = spec.clearHeight;
-            return obstacle;
         }
 
         static TrailerController CreateTrailer()

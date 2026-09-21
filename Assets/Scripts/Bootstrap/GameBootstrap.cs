@@ -42,12 +42,17 @@ namespace BananaHumper.Bootstrap
         public TrailerController trailer;
         [Tooltip("Cutter-Stationen. Ihre Abstaende sind das Level-Design des Kern-Loops (GDD 3.2).")]
         public List<CutterStation> stations = new List<CutterStation>();
-        [Tooltip("Steine, ueber die gesprungen werden muss (GDD 3.9).")]
-        public List<Obstacle> obstacles = new List<Obstacle>();
+        public CameraController cameraController;
 
         [Header("Grenzen der Reihe")]
-        public float rowMinX = -4f;
-        public float rowMaxX = 14f;
+        [Tooltip("Linker Rand. Der rechte Rand waechst mit dem am weitesten entfernten angeheuerten Cutter.")]
+        public float rowMinX = -6f;
+        [Tooltip("Puffer hinter dem letzten angeheuerten Cutter.")]
+        public float rowMarginAfterLastStation = 3f;
+
+        /// <summary>Zur Laufzeit erzeugte Steine (GDD 3.9) - jede Schicht neu gewuerfelt.</summary>
+        readonly List<Obstacle> obstacles = new List<Obstacle>();
+        float rowMaxX;
 
         void Start()
         {
@@ -58,16 +63,18 @@ namespace BananaHumper.Bootstrap
 
             if (!SceneReferencesComplete()) return;
 
+            // Das Paddock ist nur so gross wie die angeheuerte Mannschaft: Jeder
+            // zusaetzliche Cutter verlaengert die Reihe (GDD 5.2).
+            rowMaxX = LastHiredStationX() + rowMarginAfterLastStation;
+
             BuildGround();
             BuildTrailerShape(trailer.transform);
             foreach (var station in stations)
             {
-                BuildCutterFigure(station.transform);
+                if (station != null && station.isHired) BuildCutterFigure(station.transform);
+                else if (station != null) station.gameObject.SetActive(false);
             }
-            foreach (var obstacle in obstacles)
-            {
-                if (obstacle != null) BuildRockShape(obstacle);
-            }
+            SpawnRocks();
 
             player.config = balanceConfig;
             player.minX = rowMinX;
@@ -78,6 +85,13 @@ namespace BananaHumper.Bootstrap
             trailer.config = balanceConfig;
             trailer.minX = rowMinX;
             trailer.maxX = rowMaxX;
+
+            if (cameraController != null)
+            {
+                cameraController.target = player.transform;
+                cameraController.minX = rowMinX;
+                cameraController.maxX = rowMaxX;
+            }
 
             var systemsRoot = new GameObject("Systems");
             var balance = systemsRoot.AddComponent<BalanceController>();
@@ -96,6 +110,7 @@ namespace BananaHumper.Bootstrap
             shift.economy = economy;
             shift.player = player;
             shift.trailer = trailer;
+            shift.cameraController = cameraController;
             shift.stations = new List<CutterStation>(stations);
             shift.Initialize();
 
@@ -118,6 +133,7 @@ namespace BananaHumper.Bootstrap
             else if (trailer == null) missing = nameof(trailer);
             else if (stations == null || stations.Count == 0) missing = nameof(stations);
             else if (stations.Contains(null)) missing = $"{nameof(stations)} (leerer Eintrag)";
+            else if (!stations.Exists(s => s.isHired)) missing = "mindestens ein angeheuerter Cutter";
 
             if (missing == null) return true;
 
@@ -125,6 +141,68 @@ namespace BananaHumper.Bootstrap
                            "Szene ueber das Menue 'BananaHumper > Bootstrap-Szene erzeugen' neu anlegen " +
                            "oder die Felder im Inspector zuweisen.", this);
             return false;
+        }
+
+        float LastHiredStationX()
+        {
+            float last = rowMinX + 6f;
+            foreach (var station in stations)
+            {
+                if (station != null && station.isHired) last = Mathf.Max(last, station.transform.position.x);
+            }
+            return last;
+        }
+
+        /// <summary>
+        /// Steine pro Schicht neu auswuerfeln (GDD 3.9): nicht zwischen jedem
+        /// Cutterpaar einer, sondern ein paar zufaellige - und mit Mindestabstand
+        /// zu den Stationen, damit nie einer direkt unter einer Fallstelle liegt.
+        /// </summary>
+        void SpawnRocks()
+        {
+            var rocksRoot = new GameObject("Rocks").transform;
+            int count = Random.Range(balanceConfig.rockCountMin, balanceConfig.rockCountMax + 1);
+            var placed = new List<float>();
+
+            for (int i = 0; i < count; i++)
+            {
+                // Mehrere Versuche, weil eine Zufallsposition zu nah an einer
+                // Station oder einem anderen Stein liegen kann.
+                for (int attempt = 0; attempt < 24; attempt++)
+                {
+                    float x = Random.Range(rowMinX + 1.5f, rowMaxX - 1.5f);
+                    if (!IsFarEnough(x, placed)) continue;
+
+                    var go = new GameObject($"Rock{i}");
+                    go.transform.SetParent(rocksRoot, false);
+                    go.transform.position = new Vector3(x, GroundY, 0f);
+
+                    var obstacle = go.AddComponent<Obstacle>();
+                    obstacle.halfWidth = Random.Range(0.28f, 0.38f);
+                    obstacle.clearHeight = Random.Range(0.40f, 0.60f);
+
+                    BuildRockShape(obstacle);
+                    obstacles.Add(obstacle);
+                    placed.Add(x);
+                    break;
+                }
+            }
+        }
+
+        bool IsFarEnough(float x, List<float> placed)
+        {
+            float minDistance = balanceConfig.rockMinDistance;
+
+            foreach (var station in stations)
+            {
+                if (station == null || !station.isHired) continue;
+                if (Mathf.Abs(x - station.DropPosition.x) < minDistance) return false;
+            }
+            foreach (float other in placed)
+            {
+                if (Mathf.Abs(x - other) < minDistance) return false;
+            }
+            return true;
         }
 
         void BuildGround()

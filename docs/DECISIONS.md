@@ -11,6 +11,41 @@ verworfen wurde.
 
 ---
 
+## 2026-09-21 — Geduld, anheuerbare Cutter, mitfahrende Kamera, Juice
+
+Vier zusammenhängende Änderungen nach der ersten Spielrunde („Core Loop
+macht Spaß"):
+
+**Der Balken ist die Geduld des Cutters**, kein Timer mehr. Läuft sie ab,
+schlägt er ab, egal wo man steht; steht man mit freien Händen still
+darunter, schlägt er sofort ab. Aus einer Uhr, der man hinterherläuft, wird
+damit eine Verhandlung: Man kann Stauden aktiv abrufen und die Reihenfolge
+selbst bestimmen, zahlt aber mit Wartezeit. Bewusst an „steht still"
+geknüpft, nicht an bloße Nähe — sonst löst jedes Vorbeilaufen Stauden aus.
+Abrufen garantiert einen perfekten Catch ([E]): sicher-aber-langsam gegen
+riskant-aber-schnell ist die klarere Rollenverteilung.
+
+**Start mit nur 2 Cuttern** ([E]), weitere über den Shop anheuerbar (GDD
+5.2). Das Paddock endet am letzten angeheuerten Cutter und wächst mit der
+Mannschaft — dadurch fühlt sich die Farm nie leer an, und das Wachstum ist
+spürbar statt nur eine Zahl. Die Stationsplätze liegen schon in der Szene,
+`isHired` schaltet sie frei.
+
+**Mitfahrende Kamera** statt „ganze Reihe im Bild", weil das Paddock sonst
+nicht wachsen könnte. Damit die Priorisierung nicht am Bildrand endet, zeigt
+das HUD für Stationen außerhalb des Bildes eine Randanzeige mit Richtung und
+Geduld. Solange wenige Cutter angeheuert sind, zentriert die Kamera von
+selbst — man sieht dann ohnehin alles.
+
+**Steine werden pro Schicht zufällig gesetzt** (2–3 statt einer zwischen
+jedem Cutterpaar), mit Mindestabstand zu den Stationen. Das ersetzt die
+vorherige Festlegung „Steine liegen fest in der Szene, die Strecke soll
+lernbar sein" ([E] von Olli).
+
+**HUD-Bug:** Der Energiebalken war unsichtbar, weil das `Image` auf
+`type = Filled` stand, aber kein Sprite hatte — ein gefülltes Image ohne
+Sprite zeichnet nichts. Gilt für jedes UI-Image in diesem Projekt.
+
 ## 2026-09-21 — Umsetzung des neuen Kern-Loops im Code
 
 GDD v0.9 ist jetzt implementiert. Neue Bausteine: `CutterStation`,

@@ -35,6 +35,8 @@ namespace BananaHumper.Gameplay
         public ProgressBarVisual bar;
         [Tooltip("Wie geduldig dieser Cutter ist (GDD 3.2).")]
         public CutterTemperament temperament = CutterTemperament.Normal;
+        [Tooltip("Arbeitet dieser Cutter schon? Nicht angeheuerte Stationen sind unsichtbar und inaktiv - sie werden spaeter im Shop freigeschaltet (GDD 5.2).")]
+        public bool isHired;
 
         /// <summary>Der Cutter hat abgeschlagen: Staude und Abwurfposition.</summary>
         public event Action<CutterStation, BunchData, Vector3> OnCut;
@@ -58,6 +60,17 @@ namespace BananaHumper.Gameplay
             this.config = config;
             this.hangingVisual = hangingVisual;
             this.day = day;
+
+            if (!isHired)
+            {
+                // Noch nicht angeheuert: Station bleibt komplett aus dem Spiel,
+                // bis sie im Shop freigeschaltet wird (GDD 5.2).
+                PendingBunch = null;
+                if (hangingVisual != null) hangingVisual.gameObject.SetActive(false);
+                bar?.SetVisible(false);
+                return;
+            }
+
             bar?.Build(config.barWarningFraction);
             GrowNewBunch();
 
@@ -73,7 +86,7 @@ namespace BananaHumper.Gameplay
         /// </summary>
         public void Tick(float dt, bool humperReady)
         {
-            if (config == null) return;
+            if (config == null || !isHired) return;
 
             if (!HasBunch)
             {

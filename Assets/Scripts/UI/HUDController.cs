@@ -1,3 +1,4 @@
+using System.Collections.Generic;
 using UnityEngine;
 using UnityEngine.UI;
 using UnityEngine.EventSystems;
@@ -30,7 +31,32 @@ namespace BananaHumper.UI
         GameObject endPanel;
         Text endPanelText;
 
+        RectTransform canvasRect;
+        readonly List<StationMarker> stationMarkers = new List<StationMarker>();
+        readonly List<FloatingLabel> floatingLabels = new List<FloatingLabel>();
+
         static Font cachedFont;
+
+        /// <summary>
+        /// Geduldsanzeige fuer eine Station, die gerade nicht im Bild ist. Ohne
+        /// sie waere mit der mitfahrenden Kamera nicht mehr zu erkennen, wo es
+        /// dringend wird - und damit gaebe es nichts mehr zu priorisieren.
+        /// </summary>
+        class StationMarker
+        {
+            public CutterStation station;
+            public RectTransform root;
+            public Image fill;
+            public Text arrow;
+        }
+
+        class FloatingLabel
+        {
+            public RectTransform rect;
+            public Text text;
+            public Vector3 worldPosition;
+            public float elapsed;
+        }
 
         public void Bind(ShiftController shift, BalanceController balance, EnergySystem energy, EconomySystem economy, BalanceConfig config)
         {
@@ -48,6 +74,69 @@ namespace BananaHumper.UI
             shift.OnBunchDropped += () => FlashCatchText("Fallen gelassen!", new Color(0.95f, 0.3f, 0.25f));
             shift.OnStumbled += () => FlashCatchText("Stein! Spring drueber (Leertaste)", new Color(0.95f, 0.75f, 0.2f));
             shift.OnShiftEnded += ShowSummary;
+            shift.OnDelivered += ShowPayoutLabel;
+        }
+
+        void ShowPayoutLabel(int payout)
+        {
+            var worldPosition = shift.trailer != null
+                ? shift.trailer.transform.position + Vector3.up * 1.6f
+                : Vector3.zero;
+            SpawnFloatingText(worldPosition, $"+{payout} $", new Color(0.45f, 0.95f, 0.5f));
+        }
+
+        /// <summary>Aufsteigender Text an einer Weltposition (GDD 8.4).</summary>
+        public void SpawnFloatingText(Vector3 worldPosition, string message, Color color)
+        {
+            var text = CreateText(canvasRect, "Floating", Vector2.zero, TextAnchor.MiddleCenter, 26);
+            text.text = message;
+            text.color = color;
+
+            var rect = text.GetComponent<RectTransform>();
+            rect.sizeDelta = new Vector2(220, 40);
+            rect.anchorMin = new Vector2(0, 0);
+            rect.anchorMax = new Vector2(0, 0);
+            rect.pivot = new Vector2(0.5f, 0.5f);
+
+            floatingLabels.Add(new FloatingLabel { rect = rect, text = text, worldPosition = worldPosition });
+        }
+
+        void UpdateFloatingLabels(float dt)
+        {
+            const float Lifetime = 1.1f;
+            var cam = Camera.main;
+
+            for (int i = floatingLabels.Count - 1; i >= 0; i--)
+            {
+                var label = floatingLabels[i];
+                label.elapsed += dt;
+                float t = label.elapsed / Lifetime;
+
+                if (t >= 1f || cam == null)
+                {
+                    Destroy(label.rect.gameObject);
+                    floatingLabels.RemoveAt(i);
+                    continue;
+                }
+
+                label.worldPosition += Vector3.up * 1.2f * dt;
+                Vector3 screen = cam.WorldToScreenPoint(label.worldPosition);
+                label.rect.anchoredPosition = ScreenToCanvas(screen);
+
+                var c = label.text.color;
+                c.a = 1f - t * t;
+                label.text.color = c;
+            }
+        }
+
+        Vector2 ScreenToCanvas(Vector3 screenPoint)
+        {
+            // Der Canvas skaliert mit der Aufloesung (ScaleWithScreenSize),
+            // deshalb muss die Bildschirmposition auf Canvas-Einheiten umgerechnet
+            // werden statt direkt als Pixel zu gelten.
+            float scaleX = canvasRect.rect.width / Mathf.Max(1f, Screen.width);
+            float scaleY = canvasRect.rect.height / Mathf.Max(1f, Screen.height);
+            return new Vector2(screenPoint.x * scaleX, screenPoint.y * scaleY);
         }
 
         static Font GetFont()
@@ -76,6 +165,7 @@ namespace BananaHumper.UI
             scaler.referenceResolution = new Vector2(1280, 720);
             canvasGo.AddComponent<GraphicRaycaster>();
 
+            canvasRect = canvasGo.GetComponent<RectTransform>();
             var root = canvasGo.transform;
 
             dayText = CreateText(root, "DayText", new Vector2(20, -20), TextAnchor.UpperLeft, 28);
@@ -88,6 +178,7 @@ namespace BananaHumper.UI
             energyText = CreateText(root, "EnergyText", new Vector2(20, -185), TextAnchor.UpperLeft, 22);
             energyFill = CreateBar(root, "EnergyBar", new Vector2(20, -215), new Color(0.15f, 0.6f, 0.2f));
 
+            BuildStationMarkers(root);
             BuildEndPanel(root);
 
             dayText.text = "Tag 1";
@@ -193,6 +284,95 @@ namespace BananaHumper.UI
             endPanel.SetActive(false);
         }
 
+        /// <summary>
+        /// Je eine Randanzeige pro Station. Sichtbar wird sie nur, wenn die
+        /// Station gerade aus dem Bild gewandert ist - dann zeigt sie Richtung
+        /// und Geduld, damit die Priorisierung nicht am Bildrand endet.
+        /// </summary>
+        void BuildStationMarkers(Transform root)
+        {
+            foreach (var station in shift.stations)
+            {
+                if (station == null) continue;
+
+                var markerGo = new GameObject($"Marker_{station.name}");
+                markerGo.transform.SetParent(root, false);
+                var rect = markerGo.AddComponent<RectTransform>();
+                rect.anchorMin = new Vector2(0, 0.5f);
+                rect.anchorMax = new Vector2(0, 0.5f);
+                rect.pivot = new Vector2(0.5f, 0.5f);
+                rect.sizeDelta = new Vector2(120, 22);
+
+                var bg = markerGo.AddComponent<Image>();
+                bg.sprite = SpriteFactory.Square();
+                bg.color = new Color(0f, 0f, 0f, 0.55f);
+
+                var fillGo = new GameObject("Fill");
+                fillGo.transform.SetParent(markerGo.transform, false);
+                var fillRect = fillGo.AddComponent<RectTransform>();
+                fillRect.anchorMin = Vector2.zero;
+                fillRect.anchorMax = Vector2.one;
+                fillRect.offsetMin = new Vector2(2, 2);
+                fillRect.offsetMax = new Vector2(-2, -2);
+                var fill = fillGo.AddComponent<Image>();
+                fill.sprite = SpriteFactory.Square();
+                fill.type = Image.Type.Filled;
+                fill.fillMethod = Image.FillMethod.Horizontal;
+
+                var arrow = CreateText(markerGo.transform, "Arrow", Vector2.zero, TextAnchor.MiddleCenter, 20);
+                var arrowRect = arrow.GetComponent<RectTransform>();
+                arrowRect.anchorMin = Vector2.zero;
+                arrowRect.anchorMax = Vector2.one;
+                arrowRect.offsetMin = Vector2.zero;
+                arrowRect.offsetMax = Vector2.zero;
+
+                markerGo.SetActive(false);
+                stationMarkers.Add(new StationMarker { station = station, root = rect, fill = fill, arrow = arrow });
+            }
+        }
+
+        void UpdateStationMarkers()
+        {
+            var cam = Camera.main;
+            if (cam == null) return;
+
+            float leftStack = 0f;
+            float rightStack = 0f;
+
+            foreach (var marker in stationMarkers)
+            {
+                var station = marker.station;
+                if (station == null || !station.isHired || !station.HasBunch)
+                {
+                    marker.root.gameObject.SetActive(false);
+                    continue;
+                }
+
+                Vector3 screen = cam.WorldToScreenPoint(station.DropPosition);
+                bool offLeft = screen.x < 0f;
+                bool offRight = screen.x > Screen.width;
+
+                if (!offLeft && !offRight)
+                {
+                    marker.root.gameObject.SetActive(false);
+                    continue;
+                }
+
+                marker.root.gameObject.SetActive(true);
+                marker.fill.fillAmount = station.Progress;
+                marker.fill.color = station.Progress >= config.barWarningFraction
+                    ? new Color(0.95f, 0.45f, 0.15f)
+                    : new Color(0.55f, 0.8f, 0.35f);
+                marker.arrow.text = offLeft ? "◀" : "▶";
+
+                // Mehrere Stationen auf derselben Seite untereinander stapeln,
+                // sonst liegen sie deckungsgleich uebereinander.
+                float stack = offLeft ? leftStack++ : rightStack++;
+                float x = offLeft ? 80f : canvasRect.rect.width - 80f;
+                marker.root.anchoredPosition = new Vector2(x, -stack * 28f);
+            }
+        }
+
         void ShowCatchFeedback(CatchQuality quality)
         {
             switch (quality)
@@ -249,6 +429,9 @@ namespace BananaHumper.UI
                 catchTextTimer -= Time.deltaTime;
                 if (catchTextTimer <= 0f) catchText.text = string.Empty;
             }
+
+            UpdateStationMarkers();
+            UpdateFloatingLabels(Time.deltaTime);
 
             if (energy != null && energyFill != null)
             {

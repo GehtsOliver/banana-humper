@@ -44,6 +44,7 @@ namespace BananaHumper.Gameplay
         [Header("Welt")]
         public PlayerController player;
         public TrailerController trailer;
+        public CameraController cameraController;
         public List<CutterStation> stations = new List<CutterStation>();
 
         public int Day { get; private set; } = 1;
@@ -194,6 +195,9 @@ namespace BananaHumper.Gameplay
             {
                 summary.BunchesMissed++;
                 falling.ShowCrashAndDestroy(1.2f);
+                // GDD 8.4: Der Fehlschlag soll wehtun, ohne zu bestrafen.
+                cameraController?.Shake(0.25f, 0.3f);
+                SplashEffect.Spawn(falling.transform.position, new Color(0.35f, 0.28f, 0.16f), 10, 3.5f);
                 OnBunchMissed?.Invoke();
                 return;
             }
@@ -211,6 +215,11 @@ namespace BananaHumper.Gameplay
             Destroy(falling.gameObject);
             player.TakeBunch(bunch);
             balance.BeginCarry(bunch, offset);
+
+            if (quality == CatchQuality.Perfect)
+            {
+                SplashEffect.Spawn(player.transform.position, new Color(0.95f, 0.9f, 0.4f), 6, 2.2f, 0.5f);
+            }
             OnCaught?.Invoke(quality);
         }
 
@@ -246,6 +255,7 @@ namespace BananaHumper.Gameplay
         void HandleStumbled()
         {
             OnStumbled?.Invoke();
+            cameraController?.Shake(0.12f, 0.18f);
             if (!player.IsCarrying) return;
 
             energy.ApplyStumbleCost();
@@ -262,6 +272,8 @@ namespace BananaHumper.Gameplay
             energy.ApplyDropPenalty();
             summary.BunchesDropped++;
             player.ShowHurt();
+            cameraController?.Shake(0.3f, 0.35f);
+            SplashEffect.Spawn(player.transform.position, new Color(0.35f, 0.28f, 0.16f), 10, 3.5f);
             player.ClearBunch();
             OnBunchDropped?.Invoke();
         }

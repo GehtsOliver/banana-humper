@@ -158,7 +158,7 @@ Spieler von kurzen, befriedigenden Incremental- und Roguelite-Spielen (Vampire S
 **Die Entscheidung, die sich ständig wiederholt:** Welche Station als Nächstes? Die schwere Staude am anderen Ende bringt mehr Geld, kostet aber mehr Energie und lässt dich zwei nähere Balken verpassen. Schwer ist damit nicht automatisch besser, sondern eine Wette.
 
 ### 3.2 Cutter-Stationen und Geduld [Demo] **[E]**
-- Start: **6 Stationen**, verteilt über die Reihe, im Editor frei platzierbar.
+- **Start: 2 angeheuerte Cutter.** Weitere Stationsplätze stehen schon in der Reihe, werden aber erst über den Shop angeheuert (5.2) [E]. Das Paddock endet am letzten angeheuerten Cutter und **wächst mit der Mannschaft** – die Farm fühlt sich damit über den Durchlauf hinweg größer an, statt von Anfang an leer zu wirken.
 - Der Balken über einer Station ist die **Geduld des Cutters**, kein reiner Timer. Daraus ergeben sich zwei Wege, wie eine Staude fällt:
   - **Geduld abgelaufen:** Er schlägt ab, egal wo der Humper steckt. Wer nicht da ist, verliert die Staude — das ist das Risiko.
   - **Humper steht bereit:** Steht der Humper mit freien Händen still unter der Staude, schlägt der Cutter sofort ab. Das ist der freiwillige, sichere Weg.
@@ -218,8 +218,8 @@ Simulation pro Frame (wie v0.8, ohne Belastungs-Teil):
 ### 3.6 Startwerte (zum Tunen, Balance-Config als ScriptableObject) [Demo] **[A]**
 | Parameter | Startwert | Bemerkung |
 |---|---|---|
-| Stationen | 6 | in der Szene platzierbar |
-| Paddock-Breite | 26 m (−6 bis 20) | ganze Reihe bleibt im Bild |
+| Stationen | 2 angeheuert, 6 Plätze | weitere über den Shop (5.2) |
+| Paddock-Breite | wächst mit der Mannschaft | endet 3 m hinter dem letzten Cutter |
 | Basisgeduld | 8–14 s, je Staude zufällig | mal Temperament (3.2) |
 | Temperamente | ×0,55 / ×1,0 / ×1,7 | ungeduldig / normal / geduldig |
 | Bereitstehen bis Schnitt | 0,25 s | Humper still unter der Staude |
@@ -237,7 +237,7 @@ Simulation pro Frame (wie v0.8, ohne Belastungs-Teil):
 | Laufgeschwindigkeit | 2,0 m/s | Körper „Beine“ |
 | Rennen | ×1,6 | |
 | Sprunggeschwindigkeit / Schwerkraft | 7,0 / 20 | ergibt 1,22 m hoch, 0,7 s Flugzeit (3.9) |
-| Steine je Reihe | 4 | Höhe 0,40–0,60 m, in der Szene platzierbar (3.9) |
+| Steine je Schicht | 2–3, zufällig platziert | Höhe 0,40–0,60 m, Mindestabstand 2,2 m zu Stationen (3.9) |
 | Stolpern | 0,45 s bei 35 % Tempo, −4 Energie | nur mit Staude auch Wackel-Impuls |
 | Startenergie | 110 | ≈ 35 s reine Tragezeit bei Tag-1-Gewicht (4.2) |
 
@@ -263,8 +263,9 @@ Alle Werte sind Schätzungen für den ersten Graybox-Test, nicht gespielt.
 Der Weg zwischen den Stationen soll nicht nur Strecke sein. In der Reihe
 liegen **Steine**, über die mit `Leertaste` gesprungen werden muss.
 
-- Die Steine liegen fest in der Szene (Level-Design), nicht zufällig pro
-  Schicht — die Strecke soll lernbar sein.
+- Pro Schicht werden **2–3 Steine zufällig** in der Reihe verteilt [E], mit
+  Mindestabstand zu den Stationen, damit nie einer direkt unter einer
+  Fallstelle liegt. Dadurch ist jede Schicht ein etwas anderer Weg.
 - **Ohne Staude:** Dagegenlaufen kostet nur Tempo, man stolpert kurz.
 - **Mit Staude:** zusätzlich ein kräftiger Wackel-Impuls auf die Staude und
   −4 Energie. Erst dadurch lohnt sich das Springen wirklich.

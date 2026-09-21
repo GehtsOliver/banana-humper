@@ -60,7 +60,7 @@ Laufzeit.
 
 | Objekt | Bedeutung |
 |---|---|
-| `Stations/Station0..5` | **Das Level-Design:** Die Abstände zwischen den Stationen bestimmen, wie weit man laufen muss – der wichtigste Tuning-Hebel des Kern-Loops. Das Temperament (ungeduldig/normal/geduldig) steht im `CutterStation`-Inspector |
+| `Stations/Station0..5` | **Das Level-Design:** Abstände und Temperament je Station. `Is Hired` steuert, wer schon arbeitet – Start sind zwei Cutter, das Paddock endet am letzten angeheuerten |
 | `Obstacles/Rock0..5` | Steine zum Überspringen. Höhe und Breite stehen im `Obstacle`-Inspector; die sichtbare Form richtet sich danach |
 | `Player` | Startposition der Spielfigur |
 | `Player > BunchVisual` | Auflagepunkt der Staude auf der Schulter |
@@ -85,7 +85,7 @@ sieht das Ergebnis nur erst beim Drücken von Play.
 - **Laufen:** `A`/`D` durch die Reihe.
 - **Rennen:** `Shift` halten (schneller, mehr Wackeln, mehr Energie – aber
   nur mit Staude kostet Laufen überhaupt Energie).
-- **Springen:** `Leertaste`. In der Reihe liegen sechs Steine; dagegenlaufen
+- **Springen:** `Leertaste`. Pro Schicht liegen 2–3 zufällig verteilte Steine in der Reihe; dagegenlaufen
   kostet Tempo, und mit Staude zusätzlich Energie und einen kräftigen
   Wackler.
 - **Fangen:** rechtzeitig unter der fallenden Staude stehen. Stehst du mit
@@ -112,6 +112,8 @@ sieht das Ergebnis nur erst beim Drücken von Play.
 | `Gameplay/PlayerController.cs` | 3.1 | Freie Bewegung in der Reihe, Tragezustand |
 | `Gameplay/TrailerController.cs` | 3.5 | Mitfahrender Trailer, Ablieferung |
 | `Gameplay/Obstacle.cs` | 3.9 | Stein in der Reihe, Treffer- und Höhenprüfung |
+| `Gameplay/CameraController.cs` | – | Mitfahrende Kamera mit Paddock-Grenzen und Kamerawackeln |
+| `Gameplay/SplashEffect.cs` | 8.4 | Prozedurale Dreck-/Bananenspritzer beim Aufprall |
 | `Gameplay/BalanceController.cs` | 3.4 | Pendel-Simulation beim Schleppen, Umsetzen |
 | `Gameplay/EnergySystem.cs` | 4.2 | Energieverbrauch und Schichtende |
 | `Gameplay/EconomySystem.cs` | 4.1, 4.3, 5.1 | Lohn und Erfahrung |
