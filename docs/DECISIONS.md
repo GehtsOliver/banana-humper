@@ -11,6 +11,34 @@ verworfen wurde.
 
 ---
 
+## 2026-09-21 — Pflanzen und wandernde Cutter, Trailer zieht abschnittsweise weiter
+
+Zwei Änderungen, die die Struktur des Paddocks umdrehen ([E] von Olli):
+
+**Cutter sind keine Stationen mehr.** Vorher *war* ein Cutter ein fester
+Platz mit hängender Staude. Jetzt stehen **Pflanzen** willkürlich verteilt
+im Feld, und die Cutter **wandern zur nächstgelegenen freien Pflanze**,
+sobald sie abgeschlagen haben. Eine abgeerntete Pflanze treibt erst nach
+`regrowSeconds` neu aus, was die Cutter weiter ins Feld schiebt statt sie an
+einer Pflanze kleben zu lassen. Eine Pflanze wird von höchstens einem Cutter
+beansprucht (`ClaimedBy`), sonst würden zwei dieselbe ansteuern.
+
+Nebeneffekt für den Loop: Während ein Cutter läuft, ist bei ihm nichts zu
+holen. Dadurch entstehen Lücken und ein Rhythmus, ohne dass dafür etwas
+eigens eingebaut werden musste.
+
+**Der Trailer fährt nicht mehr Pendel.** Er steht, solange im Umkreis genug
+reife Stauden hängen, und zieht erst weiter, wenn der Abschnitt leergeerntet
+ist. Die Richtung wird pro Schicht ausgewürfelt. Das Feld ist dadurch
+faktisch endlos: `PaddockField` hält ein Fenster um den Trailer, sät vorne
+nach und räumt hinten auf — inklusive der Steine. Spieler-, Kamera- und
+Hindernisgrenzen ziehen jeden Frame mit.
+
+**Warum ein Fenster und keine feste Reihe:** Eine echte 88-Tage-Reihe wären
+hunderte Objekte, von denen fast alle außerhalb des Bildes stehen. Das
+Fenster liefert dasselbe Erlebnis („wir arbeiten uns durch das Feld") mit
+konstant wenigen Objekten.
+
 ## 2026-09-21 — Geduld, anheuerbare Cutter, mitfahrende Kamera, Juice
 
 Vier zusammenhängende Änderungen nach der ersten Spielrunde („Core Loop

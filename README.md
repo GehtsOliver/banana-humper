@@ -1,9 +1,10 @@
 # Banana Humper
 
 Umsetzung des GDD (v0.9) für den Kern-Loop, nach Roadmap **Stufe A**
-("Kern-Loop validieren und polieren", GDD Kapitel 16.2/16.3): mehrere
-Cutter-Stationen schneiden parallel, der Spieler muss rechtzeitig unter der
-fallenden Staude stehen und sie zum mitfahrenden Trailer schleppen. Bewusst
+("Kern-Loop validieren und polieren", GDD Kapitel 16.2/16.3): Cutter wandern
+durch das Paddock und schlagen an den Pflanzen ab, der Spieler muss
+rechtzeitig unter der fallenden Staude stehen und sie zum Trailer schleppen,
+der sich abschnittsweise durch die Reihe arbeitet. Bewusst
 **nicht** enthalten: Tagesquote, Verwarnungen, Körper/Shop-Progression,
 Prestige, Zufallsereignisse, Cutter-Sprüche, Sound. Das kommt erst, wenn der
 Kern-Loop laut Roadmap für sich allein Spaß macht (Kapitel 12, Graybox-Test).
@@ -60,32 +61,31 @@ Laufzeit.
 
 | Objekt | Bedeutung |
 |---|---|
-| `Stations/Station0..5` | **Das Level-Design:** Abstände und Temperament je Station. `Is Hired` steuert, wer schon arbeitet – Start sind zwei Cutter, das Paddock endet am letzten angeheuerten |
-| `Obstacles/Rock0..5` | Steine zum Überspringen. Höhe und Breite stehen im `Obstacle`-Inspector; die sichtbare Form richtet sich danach |
+| `Cutters/Cutter0..5` | Temperament und `Is Hired` je Cutter. Start sind zwei; Pflanzen und Steine entstehen zur Laufzeit im Feld-Fenster |
 | `Player` | Startposition der Spielfigur |
 | `Player > BunchVisual` | Auflagepunkt der Staude auf der Schulter |
-| `Trailer` | Startposition des Trailers (fährt zur Laufzeit die Reihe entlang) |
+| `Trailer` | Startposition; pro Schicht setzt ihn der Loop neu und er zieht abschnittsweise weiter |
 | `Scenery/*` | Hügel, Bäume, Wolken, Zaun, Gras |
 | `Main Camera` | Bildausschnitt |
 
-Einfach anklicken, verschieben, Szene speichern (`Strg+S`) – fertig. Kein
-Code, keine Inspector-Zahlen abtippen. Die Reihen-Grenzen, in denen sich
-Spieler und Trailer bewegen dürfen, stehen als `Row Min X` / `Row Max X` im
-`GameBootstrap`-Inspector.
+Einfach anklicken, verschieben, Szene speichern (`Strg+S`) – fertig. Die
+Größe des Arbeitsfensters ergibt sich aus der Mannschaft und steht als
+`Paddock Base Width` / `Paddock Width Per Cutter` in der `BalanceConfig`.
 
-**Noch nicht sichtbar im Edit-Modus:** Die Cutter-Figuren, die Trailer-Form,
-die Schnitt-Balken und die Stauden werden prozedural aus kantengeglätteten
-Vektorshapes gebaut (`SpriteFactory`), und deren Texturen entstehen erst zur
-Laufzeit – solche Sprites lassen sich nicht in einer Szenendatei speichern.
-Verschieben funktioniert trotzdem (der Anker bestimmt die Position), man
-sieht das Ergebnis nur erst beim Drücken von Play.
+**Nicht in der Szene:** Pflanzen und Steine entstehen erst zur Laufzeit im
+mitwandernden Feld-Fenster (`PaddockField`) – vor dem Trailer wächst nach,
+hinter ihm wird aufgeräumt. Damit ist die Reihe faktisch endlos, ohne dass
+hunderte Objekte existieren müssen. Auch Cutter-Figuren, Trailer-Form,
+Geduldsbalken und Stauden werden prozedural aus kantengeglätteten
+Vektorshapes gebaut (`SpriteFactory`); deren Texturen entstehen zur Laufzeit
+und lassen sich nicht in einer Szenendatei speichern.
 
 ## Steuerung
 
 - **Laufen:** `A`/`D` durch die Reihe.
 - **Rennen:** `Shift` halten (schneller, mehr Wackeln, mehr Energie – aber
   nur mit Staude kostet Laufen überhaupt Energie).
-- **Springen:** `Leertaste`. Pro Schicht liegen 2–3 zufällig verteilte Steine in der Reihe; dagegenlaufen
+- **Springen:** `Leertaste`. Im Feld liegen zufällig verteilte Steine; dagegenlaufen
   kostet Tempo, und mit Staude zusätzlich Energie und einen kräftigen
   Wackler.
 - **Fangen:** rechtzeitig unter der fallenden Staude stehen. Stehst du mit
@@ -106,11 +106,14 @@ sieht das Ergebnis nur erst beim Drücken von Play.
 |---|---|---|
 | `Config/BalanceConfig.cs` | 3.6 | Tuning-Werte als ScriptableObject |
 | `Gameplay/BunchData.cs` | 4.3 | Stufenlos zufälliges Gewicht/Länge pro Staude, Dicke daraus abgeleitet |
-| `Gameplay/CutterStation.cs` | 3.2 | Geduld des Cutters, Abschlagen (automatisch oder auf Zuruf), Nachwachsen |
-| `Gameplay/ProgressBarVisual.cs` | 3.2 | Geduldsbalken über der Station (in der Welt, nicht im HUD) |
+| `Gameplay/Cutter.cs` | 3.2 | Wandernder Cutter: Geduld, Abschlagen, Weg zur nächsten Pflanze |
+| `Gameplay/Plant.cs` | 3.2 | Bananenpflanze: trägt eine Staude, treibt nach der Ernte neu aus |
+| `Gameplay/PaddockField.cs` | 3.2, 3.5 | Wanderndes Feld-Fenster: sät vorne nach, räumt hinten auf |
+| `Gameplay/PaddockVisuals.cs` | 8.2 | Prozedurale Formen für Pflanzen und Steine |
+| `Gameplay/ProgressBarVisual.cs` | 3.2 | Geduldsbalken über dem Cutter (in der Welt, nicht im HUD) |
 | `Gameplay/FallingBunch.cs` | 3.3 | Fallende Staude, meldet den Aufprall |
 | `Gameplay/PlayerController.cs` | 3.1 | Freie Bewegung in der Reihe, Tragezustand |
-| `Gameplay/TrailerController.cs` | 3.5 | Mitfahrender Trailer, Ablieferung |
+| `Gameplay/TrailerController.cs` | 3.5 | Trailer: zieht erst weiter, wenn der Abschnitt leer ist; Richtung pro Schicht |
 | `Gameplay/Obstacle.cs` | 3.9 | Stein in der Reihe, Treffer- und Höhenprüfung |
 | `Gameplay/CameraController.cs` | – | Mitfahrende Kamera mit Paddock-Grenzen und Kamerawackeln |
 | `Gameplay/SplashEffect.cs` | 8.4 | Prozedurale Dreck-/Bananenspritzer beim Aufprall |

@@ -31,21 +31,19 @@ namespace BananaHumper.EditorTools
         const float BunchHangHeight = 2.6f;
 
         /// <summary>
-        /// Sechs Stationsplaetze, aber nur die ersten zwei sind angeheuert (GDD
-        /// 3.2, 5.2). Die restlichen stehen schon in der Szene und werden
-        /// spaeter im Shop freigeschaltet - das Paddock waechst also mit der
-        /// Mannschaft, weil GameBootstrap die Reihe am letzten angeheuerten
-        /// Cutter enden laesst. Temperamente sind gemischt, damit es von Anfang
-        /// an etwas zu priorisieren gibt.
+        /// Sechs Cutter, aber nur die ersten zwei sind angeheuert (GDD 3.2, 5.2).
+        /// Ihre Startposition setzt GameBootstrap, weil sie ohnehin sofort zur
+        /// naechsten Pflanze losziehen - in der Szene stehen sie nur, damit
+        /// Temperament und Anheuer-Status dort einstellbar bleiben.
         /// </summary>
-        static readonly (float x, CutterTemperament temperament, bool hired)[] Stations =
+        static readonly (CutterTemperament temperament, bool hired)[] Crew =
         {
-            (-2.0f, CutterTemperament.Normal, true),
-            (3.0f, CutterTemperament.Ungeduldig, true),
-            (8.0f, CutterTemperament.Geduldig, false),
-            (13.0f, CutterTemperament.Normal, false),
-            (18.0f, CutterTemperament.Ungeduldig, false),
-            (23.0f, CutterTemperament.Geduldig, false),
+            (CutterTemperament.Normal, true),
+            (CutterTemperament.Ungeduldig, true),
+            (CutterTemperament.Geduldig, false),
+            (CutterTemperament.Normal, false),
+            (CutterTemperament.Ungeduldig, false),
+            (CutterTemperament.Geduldig, false),
         };
 
         [MenuItem("BananaHumper/Bootstrap-Szene erzeugen")]
@@ -75,11 +73,11 @@ namespace BananaHumper.EditorTools
             var player = CreatePlayer();
             var trailer = CreateTrailer();
 
-            var stationsRoot = new GameObject("Stations").transform;
-            var stations = new List<CutterStation>();
-            for (int i = 0; i < Stations.Length; i++)
+            var crewRoot = new GameObject("Cutters").transform;
+            var cutters = new List<Cutter>();
+            for (int i = 0; i < Crew.Length; i++)
             {
-                stations.Add(CreateStation(stationsRoot, i, Stations[i].x, Stations[i].temperament, Stations[i].hired));
+                cutters.Add(CreateCutter(crewRoot, i, Crew[i].temperament, Crew[i].hired));
             }
 
             // Steine liegen nicht mehr in der Szene: Sie werden pro Schicht
@@ -90,8 +88,7 @@ namespace BananaHumper.EditorTools
             bootstrap.player = player;
             bootstrap.trailer = trailer;
             bootstrap.cameraController = cameraController;
-            bootstrap.stations = stations;
-            bootstrap.rowMinX = RowMinX;
+            bootstrap.cutters = cutters;
 
             Directory.CreateDirectory("Assets/Scenes");
             EditorSceneManager.SaveScene(scene, ScenePath);
@@ -124,43 +121,37 @@ namespace BananaHumper.EditorTools
         }
 
         /// <summary>
-        /// Eine Cutter-Station: Anker in der Reihe, darueber die haengende
-        /// Staude und der Schnitt-Balken. Die prozedurale Cutter-Figur baut
-        /// GameBootstrap zur Laufzeit darunter, ihre Textur waere in einer
-        /// Szenendatei nicht speicherbar.
+        /// Ein Cutter mit Geduldsbalken ueber dem Kopf. Die prozedurale Figur
+        /// baut GameBootstrap zur Laufzeit darunter, ihre Textur waere in einer
+        /// Szenendatei nicht speicherbar. Pflanzen stehen nicht in der Szene -
+        /// die werden pro Schicht zufaellig verteilt (GDD 3.2).
         /// </summary>
-        static CutterStation CreateStation(Transform parent, int index, float x, CutterTemperament temperament, bool hired)
+        static Cutter CreateCutter(Transform parent, int index, CutterTemperament temperament, bool hired)
         {
-            var go = new GameObject($"Station{index}_{temperament}{(hired ? "" : "_NichtAngeheuert")}");
+            string suffix = hired ? string.Empty : "_NichtAngeheuert";
+            var go = new GameObject($"Cutter{index}_{temperament}{suffix}");
             go.transform.SetParent(parent, false);
-            go.transform.position = new Vector3(x, GameBootstrap.GroundY, 0f);
+            go.transform.position = new Vector3(0f, GameBootstrap.GroundY, 0f);
 
-            var bunchAnchor = new GameObject("HangingBunch").transform;
-            bunchAnchor.SetParent(go.transform, false);
-            bunchAnchor.localPosition = new Vector3(0f, BunchHangHeight, 0f);
-            bunchAnchor.gameObject.AddComponent<BananaBunchVisual>();
-
-            var barGo = new GameObject("CutBar");
+            var barGo = new GameObject("PatienceBar");
             barGo.transform.SetParent(go.transform, false);
-            barGo.transform.localPosition = new Vector3(0f, BunchHangHeight + 0.9f, 0f);
+            barGo.transform.localPosition = new Vector3(0f, 2.2f, 0f);
             var bar = barGo.AddComponent<ProgressBarVisual>();
 
-            var station = go.AddComponent<CutterStation>();
-            station.bunchAnchor = bunchAnchor;
-            station.bar = bar;
-            station.temperament = temperament;
-            station.isHired = hired;
-            return station;
+            var cutter = go.AddComponent<Cutter>();
+            cutter.bar = bar;
+            cutter.temperament = temperament;
+            cutter.isHired = hired;
+            return cutter;
         }
 
         static TrailerController CreateTrailer()
         {
+            // Startposition setzt ShiftController pro Schicht neu - der Trailer
+            // zieht ja mit dem abgeernteten Abschnitt weiter (GDD 3.5).
             var go = new GameObject("Trailer");
             go.transform.position = new Vector3(TrailerX, GameBootstrap.GroundY, 0f);
-            var trailer = go.AddComponent<TrailerController>();
-            trailer.minX = RowMinX;
-            trailer.maxX = RowMaxX;
-            return trailer;
+            return go.AddComponent<TrailerController>();
         }
 
         static PlayerController CreatePlayer()

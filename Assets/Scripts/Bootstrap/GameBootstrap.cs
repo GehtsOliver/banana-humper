@@ -33,6 +33,8 @@ namespace BananaHumper.Bootstrap
         /// <summary>Bodenhoehe der Welt - auch das Editor-Tool platziert die Kulisse darauf.</summary>
         public const float GroundY = -1.5f;
         public const float PlayerBodyHeight = 1.6f;
+        /// <summary>Hoehe, in der die Staude an der Pflanze haengt.</summary>
+        public const float PlantBunchHeight = 2.6f;
 
         [Tooltip("Optional: eigene BalanceConfig-Asset zuweisen. Leer = Default-Werte aus Kapitel 3.6.")]
         public BalanceConfig balanceConfig;
@@ -40,19 +42,17 @@ namespace BananaHumper.Bootstrap
         [Header("Szenen-Objekte (legt 'BananaHumper > Bootstrap-Szene erzeugen' an)")]
         public PlayerController player;
         public TrailerController trailer;
-        [Tooltip("Cutter-Stationen. Ihre Abstaende sind das Level-Design des Kern-Loops (GDD 3.2).")]
-        public List<CutterStation> stations = new List<CutterStation>();
+        [Tooltip("Die Cutter. Nicht angeheuerte bleiben aus, bis der Shop sie freischaltet (GDD 5.2).")]
+        public List<Cutter> cutters = new List<Cutter>();
         public CameraController cameraController;
 
-        [Header("Grenzen der Reihe")]
-        [Tooltip("Linker Rand. Der rechte Rand waechst mit dem am weitesten entfernten angeheuerten Cutter.")]
-        public float rowMinX = -6f;
-        [Tooltip("Puffer hinter dem letzten angeheuerten Cutter.")]
-        public float rowMarginAfterLastStation = 3f;
-
-        /// <summary>Zur Laufzeit erzeugte Steine (GDD 3.9) - jede Schicht neu gewuerfelt.</summary>
-        readonly List<Obstacle> obstacles = new List<Obstacle>();
-        float rowMaxX;
+        /// <summary>
+        /// Das begehbare Fenster waechst mit der angeheuerten Mannschaft
+        /// (GDD 5.2): mehr Cutter heisst mehr Feld, nicht bloss mehr Betrieb
+        /// auf demselben Fleck. Grenzen und Inhalt verwaltet danach PaddockField,
+        /// weil das Fenster mit dem Trailer weiterwandert.
+        /// </summary>
+        PaddockField field;
 
         void Start()
         {
@@ -63,34 +63,25 @@ namespace BananaHumper.Bootstrap
 
             if (!SceneReferencesComplete()) return;
 
-            // Das Paddock ist nur so gross wie die angeheuerte Mannschaft: Jeder
-            // zusaetzliche Cutter verlaengert die Reihe (GDD 5.2).
-            rowMaxX = LastHiredStationX() + rowMarginAfterLastStation;
+            int hiredCount = cutters.FindAll(c => c != null && c.isHired).Count;
+            float windowWidth = balanceConfig.paddockBaseWidth
+                              + balanceConfig.paddockWidthPerCutter * hiredCount;
 
-            BuildGround();
+            field = new GameObject("Paddock").AddComponent<PaddockField>();
+            field.aheadDistance = windowWidth * 0.65f;
+            field.behindDistance = windowWidth * 0.35f;
+
+            BuildGround(player.PositionX, windowWidth * 6f);
             BuildTrailerShape(trailer.transform);
-            foreach (var station in stations)
-            {
-                if (station != null && station.isHired) BuildCutterFigure(station.transform);
-                else if (station != null) station.gameObject.SetActive(false);
-            }
-            SpawnRocks();
+            SetupCutters(windowWidth);
 
             player.config = balanceConfig;
-            player.minX = rowMinX;
-            player.maxX = rowMaxX;
-            player.obstacles = new List<Obstacle>(obstacles);
             player.ClearBunch();
-
             trailer.config = balanceConfig;
-            trailer.minX = rowMinX;
-            trailer.maxX = rowMaxX;
 
             if (cameraController != null)
             {
                 cameraController.target = player.transform;
-                cameraController.minX = rowMinX;
-                cameraController.maxX = rowMaxX;
             }
 
             var systemsRoot = new GameObject("Systems");
@@ -111,7 +102,8 @@ namespace BananaHumper.Bootstrap
             shift.player = player;
             shift.trailer = trailer;
             shift.cameraController = cameraController;
-            shift.stations = new List<CutterStation>(stations);
+            shift.cutters = new List<Cutter>(cutters);
+            shift.field = field;
             shift.Initialize();
 
             hud.Bind(shift, balance, energy, economy, balanceConfig);
@@ -131,9 +123,9 @@ namespace BananaHumper.Bootstrap
             string missing = null;
             if (player == null) missing = nameof(player);
             else if (trailer == null) missing = nameof(trailer);
-            else if (stations == null || stations.Count == 0) missing = nameof(stations);
-            else if (stations.Contains(null)) missing = $"{nameof(stations)} (leerer Eintrag)";
-            else if (!stations.Exists(s => s.isHired)) missing = "mindestens ein angeheuerter Cutter";
+            else if (cutters == null || cutters.Count == 0) missing = nameof(cutters);
+            else if (cutters.Contains(null)) missing = $"{nameof(cutters)} (leerer Eintrag)";
+            else if (!cutters.Exists(c => c.isHired)) missing = "mindestens ein angeheuerter Cutter";
 
             if (missing == null) return true;
 
@@ -143,73 +135,39 @@ namespace BananaHumper.Bootstrap
             return false;
         }
 
-        float LastHiredStationX()
+        /// <summary>
+        /// Cutter starten verteilt im Feld und suchen sich von dort die
+        /// naechste Pflanze. Nicht angeheuerte bleiben komplett aus.
+        /// </summary>
+        void SetupCutters(float windowWidth)
         {
-            float last = rowMinX + 6f;
-            foreach (var station in stations)
+            var hired = cutters.FindAll(c => c != null && c.isHired);
+            for (int i = 0; i < cutters.Count; i++)
             {
-                if (station != null && station.isHired) last = Mathf.Max(last, station.transform.position.x);
+                var cutter = cutters[i];
+                if (cutter == null) continue;
+                if (!cutter.isHired)
+                {
+                    cutter.gameObject.SetActive(false);
+                    continue;
+                }
+
+                // Verteilt starten, damit sie nicht alle am selben Fleck
+                // losziehen; die naechste Pflanze suchen sie sich selbst.
+                int slot = hired.IndexOf(cutter);
+                float t = hired.Count > 1 ? (float)slot / (hired.Count - 1) : 0.5f;
+                float x = player.PositionX + Mathf.Lerp(-windowWidth * 0.2f, windowWidth * 0.4f, t);
+                cutter.transform.position = new Vector3(x, GroundY, 0f);
+                BuildCutterFigure(cutter.transform);
             }
-            return last;
         }
 
         /// <summary>
-        /// Steine pro Schicht neu auswuerfeln (GDD 3.9): nicht zwischen jedem
-        /// Cutterpaar einer, sondern ein paar zufaellige - und mit Mindestabstand
-        /// zu den Stationen, damit nie einer direkt unter einer Fallstelle liegt.
+        /// Boden als breites Band: Er muss das ganze wandernde Fenster
+        /// abdecken, deshalb grosszuegig statt passgenau.
         /// </summary>
-        void SpawnRocks()
+        void BuildGround(float centerX, float width)
         {
-            var rocksRoot = new GameObject("Rocks").transform;
-            int count = Random.Range(balanceConfig.rockCountMin, balanceConfig.rockCountMax + 1);
-            var placed = new List<float>();
-
-            for (int i = 0; i < count; i++)
-            {
-                // Mehrere Versuche, weil eine Zufallsposition zu nah an einer
-                // Station oder einem anderen Stein liegen kann.
-                for (int attempt = 0; attempt < 24; attempt++)
-                {
-                    float x = Random.Range(rowMinX + 1.5f, rowMaxX - 1.5f);
-                    if (!IsFarEnough(x, placed)) continue;
-
-                    var go = new GameObject($"Rock{i}");
-                    go.transform.SetParent(rocksRoot, false);
-                    go.transform.position = new Vector3(x, GroundY, 0f);
-
-                    var obstacle = go.AddComponent<Obstacle>();
-                    obstacle.halfWidth = Random.Range(0.28f, 0.38f);
-                    obstacle.clearHeight = Random.Range(0.40f, 0.60f);
-
-                    BuildRockShape(obstacle);
-                    obstacles.Add(obstacle);
-                    placed.Add(x);
-                    break;
-                }
-            }
-        }
-
-        bool IsFarEnough(float x, List<float> placed)
-        {
-            float minDistance = balanceConfig.rockMinDistance;
-
-            foreach (var station in stations)
-            {
-                if (station == null || !station.isHired) continue;
-                if (Mathf.Abs(x - station.DropPosition.x) < minDistance) return false;
-            }
-            foreach (float other in placed)
-            {
-                if (Mathf.Abs(x - other) < minDistance) return false;
-            }
-            return true;
-        }
-
-        void BuildGround()
-        {
-            float margin = 3f;
-            float width = Mathf.Abs(rowMaxX - rowMinX) + margin * 2f;
-            float centerX = (rowMinX + rowMaxX) * 0.5f;
             SpriteFactory.CreateQuad("Ground", new Color(0.30f, 0.33f, 0.17f), new Vector2(width, 2f), null,
                 new Vector3(centerX, GroundY - 1f, 0f), sortingOrder: -1);
         }
@@ -241,29 +199,6 @@ namespace BananaHumper.Bootstrap
             machete.localPosition = new Vector3(0.42f, 1.05f, 0f);
             machete.localRotation = Quaternion.Euler(0f, 0f, -35f);
             SpriteFactory.CreateRoundedQuad("Blade", blade, new Vector2(0.1f, 0.65f), 0.5f, machete, Vector3.zero, 2);
-        }
-
-        /// <summary>
-        /// Prozeduraler Stein (GDD 3.9). Die Form richtet sich nach den Werten
-        /// der Obstacle-Komponente, damit das, was man sieht, auch das ist,
-        /// woran man haengenbleibt.
-        /// </summary>
-        void BuildRockShape(Obstacle obstacle)
-        {
-            var stoneColor = new Color(0.45f, 0.44f, 0.42f);
-            var shadeColor = new Color(0.33f, 0.32f, 0.31f);
-
-            var shape = new GameObject("RockShape").transform;
-            shape.SetParent(obstacle.transform, false);
-
-            float width = obstacle.halfWidth * 2f;
-            float height = obstacle.clearHeight;
-            // Genau 0..clearHeight hoch: Der sichtbare Stein ist damit exakt das,
-            // was man ueberspringen muss - keine unsichtbaren Raender.
-            SpriteFactory.CreateEllipse("Stone", stoneColor, new Vector2(width, height),
-                shape, new Vector3(0f, height * 0.5f, 0f), 1);
-            SpriteFactory.CreateEllipse("Shade", shadeColor, new Vector2(width * 0.45f, height * 0.35f),
-                shape, new Vector3(-width * 0.14f, height * 0.6f, 0f), 2);
         }
 
         /// <summary>Prozeduraler Trailer (rundes Vektor-Composite), unter dem Szenen-Anker.</summary>

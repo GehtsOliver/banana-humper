@@ -22,8 +22,20 @@ namespace BananaHumper.Config
         public float patienceSecondsMax = 14f;
         [Tooltip("So lange muss man still unter der Staude stehen, damit der Cutter frueher abschlaegt.")]
         public float readyToCutSeconds = 0.25f;
-        [Tooltip("Pause, bis eine abgeerntete Station eine neue Staude aufhaengt.")]
-        public float regrowSeconds = 3f;
+        [Tooltip("Wie schnell ein Cutter zur naechsten Pflanze geht. Langsamer als der Humper, damit man ihn einholen kann.")]
+        public float cutterWalkSpeed = 1.2f;
+        [Tooltip("Pause, bis an einer abgeernteten Pflanze wieder etwas haengt.")]
+        public float regrowSeconds = 6f;
+
+        [Header("Pflanzen (3.2)")]
+        [Tooltip("Abstand zwischen zwei Pflanzen im Paddock - bestimmt, wie dicht das Feld steht.")]
+        public float plantSpacingMin = 2.2f;
+        public float plantSpacingMax = 4.0f;
+
+        [Header("Paddock-Groesse")]
+        [Tooltip("Grundbreite der Reihe plus Zuschlag je angeheuertem Cutter - das Feld waechst mit der Mannschaft.")]
+        public float paddockBaseWidth = 12f;
+        public float paddockWidthPerCutter = 5f;
         [Range(0f, 1f)] public float barWarningFraction = 0.7f;
 
         [Header("Temperamente (3.2)")]
@@ -45,7 +57,12 @@ namespace BananaHumper.Config
         [Range(0f, 1f)] public float grazePayoutPenalty = 0.25f;
 
         [Header("Trailer (3.5)")]
-        public float trailerSpeed = 0.4f;
+        [Tooltip("Tempo, wenn der Trailer weiterzieht. Bewusst langsam - er soll schleichen, nicht davonfahren.")]
+        public float trailerSpeed = 0.5f;
+        [Tooltip("Unter so vielen reifen Stauden im Abschnitt zieht der Trailer weiter.")]
+        public int trailerAdvanceRipeThreshold = 2;
+        [Tooltip("Radius, der als 'aktueller Abschnitt' um den Trailer zaehlt.")]
+        public float trailerSectionRadius = 9f;
         [Tooltip("Ab diesem Abstand zum Trailer wird automatisch abgeliefert.")]
         public float deliveryRadius = 1.2f;
 

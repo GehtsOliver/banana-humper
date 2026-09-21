@@ -44,7 +44,7 @@ namespace BananaHumper.UI
         /// </summary>
         class StationMarker
         {
-            public CutterStation station;
+            public Cutter cutter;
             public RectTransform root;
             public Image fill;
             public Text arrow;
@@ -291,11 +291,11 @@ namespace BananaHumper.UI
         /// </summary>
         void BuildStationMarkers(Transform root)
         {
-            foreach (var station in shift.stations)
+            foreach (var cutter in shift.cutters)
             {
-                if (station == null) continue;
+                if (cutter == null || !cutter.isHired) continue;
 
-                var markerGo = new GameObject($"Marker_{station.name}");
+                var markerGo = new GameObject($"Marker_{cutter.name}");
                 markerGo.transform.SetParent(root, false);
                 var rect = markerGo.AddComponent<RectTransform>();
                 rect.anchorMin = new Vector2(0, 0.5f);
@@ -327,7 +327,7 @@ namespace BananaHumper.UI
                 arrowRect.offsetMax = Vector2.zero;
 
                 markerGo.SetActive(false);
-                stationMarkers.Add(new StationMarker { station = station, root = rect, fill = fill, arrow = arrow });
+                stationMarkers.Add(new StationMarker { cutter = cutter, root = rect, fill = fill, arrow = arrow });
             }
         }
 
@@ -341,14 +341,14 @@ namespace BananaHumper.UI
 
             foreach (var marker in stationMarkers)
             {
-                var station = marker.station;
-                if (station == null || !station.isHired || !station.HasBunch)
+                var cutter = marker.cutter;
+                if (cutter == null || !cutter.isHired || !cutter.IsWorking)
                 {
                     marker.root.gameObject.SetActive(false);
                     continue;
                 }
 
-                Vector3 screen = cam.WorldToScreenPoint(station.DropPosition);
+                Vector3 screen = cam.WorldToScreenPoint(cutter.DropPosition);
                 bool offLeft = screen.x < 0f;
                 bool offRight = screen.x > Screen.width;
 
@@ -359,8 +359,8 @@ namespace BananaHumper.UI
                 }
 
                 marker.root.gameObject.SetActive(true);
-                marker.fill.fillAmount = station.Progress;
-                marker.fill.color = station.Progress >= config.barWarningFraction
+                marker.fill.fillAmount = cutter.Progress;
+                marker.fill.color = cutter.Progress >= config.barWarningFraction
                     ? new Color(0.95f, 0.45f, 0.15f)
                     : new Color(0.55f, 0.8f, 0.35f);
                 marker.arrow.text = offLeft ? "◀" : "▶";

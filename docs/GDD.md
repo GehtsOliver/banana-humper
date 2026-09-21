@@ -158,7 +158,9 @@ Spieler von kurzen, befriedigenden Incremental- und Roguelite-Spielen (Vampire S
 **Die Entscheidung, die sich ständig wiederholt:** Welche Station als Nächstes? Die schwere Staude am anderen Ende bringt mehr Geld, kostet aber mehr Energie und lässt dich zwei nähere Balken verpassen. Schwer ist damit nicht automatisch besser, sondern eine Wette.
 
 ### 3.2 Cutter-Stationen und Geduld [Demo] **[E]**
-- **Start: 2 angeheuerte Cutter.** Weitere Stationsplätze stehen schon in der Reihe, werden aber erst über den Shop angeheuert (5.2) [E]. Das Paddock endet am letzten angeheuerten Cutter und **wächst mit der Mannschaft** – die Farm fühlt sich damit über den Durchlauf hinweg größer an, statt von Anfang an leer zu wirken.
+- **Start: 2 angeheuerte Cutter**, weitere über den Shop (5.2) [E]. Das Arbeitsfenster wächst mit der Mannschaft.
+- **Pflanzen statt fester Stationen [E]:** Bananenpflanzen stehen willkürlich verteilt im Paddock. Ein Cutter schlägt an einer Pflanze ab und **wandert dann zur nächstgelegenen freien Pflanze**. Eine abgeerntete Pflanze treibt erst nach einer Weile neu aus, was die Cutter weiter ins Feld schiebt.
+- Während ein Cutter läuft, ist bei ihm nichts zu holen – dadurch entstehen von selbst Lücken und ein Rhythmus statt Dauerbeschuss.
 - Der Balken über einer Station ist die **Geduld des Cutters**, kein reiner Timer. Daraus ergeben sich zwei Wege, wie eine Staude fällt:
   - **Geduld abgelaufen:** Er schlägt ab, egal wo der Humper steckt. Wer nicht da ist, verliert die Staude — das ist das Risiko.
   - **Humper steht bereit:** Steht der Humper mit freien Händen still unter der Staude, schlägt der Cutter sofort ab. Das ist der freiwillige, sichere Weg.
@@ -210,15 +212,19 @@ Simulation pro Frame (wie v0.8, ohne Belastungs-Teil):
 - `length` = Staudenlänge (1,0 = mittlere Staude), lange Stauden kippen träger
 
 ### 3.5 Trailer [Demo] **[E]**
-- Der Traktor zieht den Trailer langsam die Reihe entlang (`trailerTempo`), wie im echten Ablauf (1.4).
+- Der Trailer **steht**, solange im aktuellen Abschnitt genug Stauden hängen. Erst wenn die Bananen dort zur Neige gehen (unter `trailerAdvanceRipeThreshold` reife Stauden im Umkreis), zieht der Traktor ihn langsam weiter – wie im echten Ablauf (1.4).
+- Die **Richtung wird pro Schicht ausgewürfelt** [E]: mal arbeitet sich die Crew nach rechts durch das Feld, mal nach links.
+- Das Paddock ist damit faktisch endlos: Vor dem Trailer wachsen neue Pflanzen nach, hinter ihm wird aufgeräumt. Die Crew arbeitet sich sichtbar durch die Reihe, statt auf einem Fleck zu kreisen.
 - Abgeliefert wird automatisch, sobald der Spieler mit Staude den Trailer erreicht.
-- Dadurch verschieben sich die Wege laufend: Eine Station, die eben noch günstig lag, ist zwei Stauden später weit weg.
-- Erreicht der Trailer das Ende der Reihe, fährt er zurück zum Anfang **[A]**. Alternative (im Graybox-Test prüfen): Die Reihe ist zu Ende und damit auch die Schicht.
+- Dadurch verschieben sich die Wege laufend: Eine Pflanze, die eben noch günstig lag, ist zwei Stauden später weit weg.
 
 ### 3.6 Startwerte (zum Tunen, Balance-Config als ScriptableObject) [Demo] **[A]**
 | Parameter | Startwert | Bemerkung |
 |---|---|---|
-| Stationen | 2 angeheuert, 6 Plätze | weitere über den Shop (5.2) |
+| Cutter | 2 angeheuert, 6 Plätze | weitere über den Shop (5.2) |
+| Pflanzenabstand | 2,2–4,0 m, zufällig | kein Raster |
+| Cutter-Lauftempo | 1,2 m/s | langsamer als der Humper |
+| Nachwachsen | 6 s | schiebt die Cutter weiter ins Feld |
 | Paddock-Breite | wächst mit der Mannschaft | endet 3 m hinter dem letzten Cutter |
 | Basisgeduld | 8–14 s, je Staude zufällig | mal Temperament (3.2) |
 | Temperamente | ×0,55 / ×1,0 / ×1,7 | ungeduldig / normal / geduldig |
@@ -227,7 +233,8 @@ Simulation pro Frame (wie v0.8, ohne Belastungs-Teil):
 | fallzeit | 1,2 s | Zeitfenster zum Hinlaufen |
 | fangradius | 1,0 m | |
 | perfektFenster | 0,25 m | |
-| trailerTempo | 0,4 m/s | |
+| Trailer-Tempo | 0,5 m/s | nur wenn der Abschnitt leer wird |
+| Abschnitt gilt als leer | unter 2 reife Stauden im Umkreis 9 m | |
 | gravity / length | 4,0 | geteilt durch die Staudenlänge |
 | offsetTorque | 1,5 | Shop „Schulterpad“ |
 | damping | 2,5 | höher als v0.8 (1,2) = verzeihender |

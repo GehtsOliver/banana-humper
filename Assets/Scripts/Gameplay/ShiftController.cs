@@ -23,13 +23,13 @@ namespace BananaHumper.Gameplay
     }
 
     /// <summary>
-    /// Der Kern-Loop seit GDD v0.9: mehrere Cutter-Stationen schneiden parallel,
-    /// der Spieler muss rechtzeitig unter der fallenden Staude stehen und sie
-    /// dann zum mitfahrenden Trailer schleppen. Wer schleppt, kann nicht fangen -
-    /// darin liegt die zentrale Entscheidung.
+    /// Der Kern-Loop seit GDD v0.9: Cutter wandern durch das Paddock, schlagen
+    /// an den Pflanzen ab, und der Humper muss rechtzeitig unter der fallenden
+    /// Staude stehen und sie zum mitfahrenden Trailer schleppen. Wer schleppt,
+    /// kann nicht fangen - darin liegt die zentrale Entscheidung.
     ///
-    /// Dieses Skript taktet alle Beteiligten (Stationen, Trailer, Spieler,
-    /// Pendel) statt einer Trip-Statemachine wie bis v0.8. Alles andere
+    /// Dieses Skript taktet alle Beteiligten (Pflanzen, Cutter, Trailer,
+    /// Spieler, Pendel) statt einer Trip-Statemachine wie bis v0.8. Alles andere
     /// (Tagesquote, Verwarnungen, Koerper/Shop) ist bewusst noch nicht drin -
     /// Stufe A validiert erst diesen Loop.
     /// </summary>
@@ -45,7 +45,8 @@ namespace BananaHumper.Gameplay
         public PlayerController player;
         public TrailerController trailer;
         public CameraController cameraController;
-        public List<CutterStation> stations = new List<CutterStation>();
+        public List<Cutter> cutters = new List<Cutter>();
+        public PaddockField field;
 
         public int Day { get; private set; } = 1;
         public bool IsShiftActive { get; private set; }
@@ -76,9 +77,9 @@ namespace BananaHumper.Gameplay
         {
             balance.OnDropped += HandleDropped;
             player.OnStumbled += HandleStumbled;
-            foreach (var station in stations)
+            foreach (var cutter in cutters)
             {
-                if (station != null) station.OnCut += HandleStationCut;
+                if (cutter != null) cutter.OnCut += HandleCut;
             }
         }
 
@@ -86,9 +87,9 @@ namespace BananaHumper.Gameplay
         {
             if (balance != null) balance.OnDropped -= HandleDropped;
             if (player != null) player.OnStumbled -= HandleStumbled;
-            foreach (var station in stations)
+            foreach (var cutter in cutters)
             {
-                if (station != null) station.OnCut -= HandleStationCut;
+                if (cutter != null) cutter.OnCut -= HandleCut;
             }
         }
 
@@ -103,20 +104,18 @@ namespace BananaHumper.Gameplay
             energy.StartShift();
             player.ClearBunch();
 
-            foreach (var station in stations)
+            // Richtung pro Schicht auswuerfeln: Mal arbeitet sich die Crew nach
+            // rechts durch das Feld, mal nach links (GDD 3.5).
+            trailer.BeginShift(player.PositionX + 3f);
+            field.Initialize(config, day, trailer.Direction, trailer.PositionX);
+
+            foreach (var cutter in cutters)
             {
-                if (station != null) station.Initialize(config, StationVisual(station), day);
+                if (cutter != null) cutter.Initialize(config, field.Plants);
             }
 
             IsShiftActive = true;
             OnShiftStarted?.Invoke();
-        }
-
-        BananaBunchVisual StationVisual(CutterStation station)
-        {
-            return station.bunchAnchor != null
-                ? station.bunchAnchor.GetComponentInChildren<BananaBunchVisual>(true)
-                : null;
         }
 
         void Update()
@@ -125,11 +124,19 @@ namespace BananaHumper.Gameplay
 
             float dt = Time.deltaTime;
 
-            foreach (var station in stations)
+            field.Tick(dt);
+
+            // Der Trailer zieht nur weiter, wenn der Abschnitt leergeerntet ist
+            // (GDD 3.5) - und das Feld wandert mit ihm.
+            int ripeNearby = field.CountRipeNear(trailer.PositionX, config.trailerSectionRadius);
+            trailer.Tick(dt, ripeNearby);
+            field.UpdateWindow(trailer.PositionX);
+            ApplyFieldBounds();
+
+            foreach (var cutter in cutters)
             {
-                if (station != null) station.Tick(dt, HumperIsReadyAt(station));
+                if (cutter != null) cutter.Tick(dt, HumperIsReadyAt(cutter));
             }
-            trailer.Tick(dt);
             player.Tick(dt);
 
             if (player.IsCarrying) TickCarrying(dt);
@@ -138,16 +145,34 @@ namespace BananaHumper.Gameplay
         }
 
         /// <summary>
+        /// Spieler, Kamera und Steine ziehen mit dem Feld mit - sonst liefe man
+        /// gegen die Grenzen des vorherigen Abschnitts.
+        /// </summary>
+        void ApplyFieldBounds()
+        {
+            player.minX = field.MinX;
+            player.maxX = field.MaxX;
+            player.obstacles = field.Obstacles;
+
+            if (cameraController == null) return;
+            cameraController.minX = field.MinX;
+            cameraController.maxX = field.MaxX;
+        }
+
+        /// <summary>
         /// Steht der Humper mit freien Haenden still unter dieser Staude? Dann
         /// schlaegt der Cutter frueher ab (GDD 3.2). Bewusst an "steht still"
         /// geknuepft und nicht bloss an die Naehe - sonst wuerde jedes
         /// Vorbeilaufen unterwegs ungewollt Stauden ausloesen.
         /// </summary>
-        bool HumperIsReadyAt(CutterStation station)
+        bool HumperIsReadyAt(Cutter cutter)
         {
+            // Nur wer schon an einer Pflanze steht, kann abschlagen - einen
+            // laufenden Cutter kann man nicht anhalten.
+            if (!cutter.IsWorking) return false;
             if (player.IsCarrying || player.IsMoving || !player.IsGrounded) return false;
             float reach = config.catchRadius * config.normalCatchFraction;
-            return Mathf.Abs(player.PositionX - station.DropPosition.x) <= reach;
+            return Mathf.Abs(player.PositionX - cutter.DropPosition.x) <= reach;
         }
 
         void TickCarrying(float dt)
@@ -174,7 +199,7 @@ namespace BananaHumper.Gameplay
             if (player.IsCarrying && trailer.IsInDeliveryRange(player.PositionX)) Deliver();
         }
 
-        void HandleStationCut(CutterStation station, BunchData bunch, Vector3 dropPosition)
+        void HandleCut(Cutter cutter, BunchData bunch, Vector3 dropPosition)
         {
             // Bewusst die Bodenhoehe, nicht die aktuelle Spielerhoehe: Sonst
             // wuerde ein Sprung im falschen Moment die Fallstrecke verkuerzen.
@@ -284,9 +309,9 @@ namespace BananaHumper.Gameplay
             balance.StopCarry();
             player.ClearBunch();
 
-            foreach (var station in stations)
+            foreach (var cutter in cutters)
             {
-                if (station != null) station.StopForShiftEnd();
+                if (cutter != null) cutter.StopForShiftEnd();
             }
             foreach (var falling in inFlight)
             {
