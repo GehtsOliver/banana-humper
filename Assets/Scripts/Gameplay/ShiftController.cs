@@ -177,6 +177,16 @@ namespace BananaHumper.Gameplay
 
         void TickCarrying(float dt)
         {
+            if (!config.balancingEnabled)
+            {
+                // Balancieren ist abgeschaltet: Die Staude sitzt fest, es
+                // bleiben Gewicht und Weg als Kosten (GDD 3.4).
+                energy.ConsumeCarrying(player.CarriedBunch.Weight, player.IsRunning, dt);
+                player.ApplyCarryPose(0f, 0f);
+                if (trailer.IsInDeliveryRange(player.PositionX)) Deliver();
+                return;
+            }
+
             if (Input.GetKeyDown(KeyCode.E) && balance.TryBeginReposition())
             {
                 energy.ApplyRepositionCost();
@@ -284,6 +294,8 @@ namespace BananaHumper.Gameplay
             if (!player.IsCarrying) return;
 
             energy.ApplyStumbleCost();
+            if (!config.balancingEnabled) return;
+
             float direction = UnityEngine.Random.value < 0.5f ? -1f : 1f;
             balance.ApplyImpulse(direction * config.stumbleWobbleImpulse);
         }

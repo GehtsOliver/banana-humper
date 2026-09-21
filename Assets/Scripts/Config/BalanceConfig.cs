@@ -67,6 +67,11 @@ namespace BananaHumper.Config
         public float deliveryRadius = 1.2f;
 
         [Header("Pendel beim Schleppen (3.4)")]
+        [Tooltip("Aus: Die Staude sitzt fest auf der Schulter, kein Wackeln, kein Fallenlassen, " +
+                 "keine Maustasten. Der Kern ist Fangen und Route - das Balancieren war zuletzt " +
+                 "nur noch Beiwerk und lenkte davon ab (Nutzerentscheidung, siehe docs/DECISIONS.md).")]
+        public bool balancingEnabled;
+
         // Balancieren ist seit v0.9 nicht mehr die Herausforderung, nur noch
         // spuerbares Gewicht - deshalb hoeheres damping und groesserer maxAngle
         // als in v0.8 (1.2 / 35 Grad).

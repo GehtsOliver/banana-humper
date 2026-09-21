@@ -11,6 +11,34 @@ verworfen wurde.
 
 ---
 
+## 2026-09-21 — Shop gebaut, Balancieren abgeschaltet
+
+**Shop (GDD 5.2)** am Schichtende, bezahlt mit Geld, flache Liste ohne
+Abhängigkeiten (kein Skill Tree, so steht es im GDD). Fünf Einträge: Cutter
+anheuern, Schulterpad (Fangradius), Gute Stiefel (Tempo), Tragegurt
+(Energie beim Schleppen), Instant-Kaffee (Startenergie). Die GDD-Artikel aus
+v0.8 zielten auf `maxAngle`, `offsetTorque` und Ereignisse, die es nicht
+(mehr) gibt — Kapitel 5.2 ist entsprechend umgeschrieben, 5.1 (Körper) ist
+als noch-nicht-gebaut markiert.
+
+**Zwischen den Schichten, nicht mittendrin:** Der Loop soll nicht für Menüs
+unterbrochen werden, und Anheuern ändert die Größe des Paddocks — das lässt
+sich nur beim Schichtstart sauber neu aufbauen.
+
+**Upgrades ändern das BalanceConfig-Asset nicht.** `UpgradeSystem` hält eine
+Laufzeitkopie, die bei jedem Kauf frisch aus den Basiswerten abgeleitet und
+dann mit allen Stufen überschrieben wird (`JsonUtility.FromJsonOverwrite`).
+Ohne das hätte ein Kauf im Editor die Asset-Datei dauerhaft verändert, und
+die Effekte hätten sich bei jedem Kauf erneut aufaddiert. Entspricht dem
+"Stats-Prinzip" aus GDD 10.2.
+
+**Balancieren abgeschaltet [E] von Olli.** `balancingEnabled` steht auf
+false: Die Staude sitzt fest, kein Wackeln, kein Fallenlassen, keine
+Maustasten. Der Kern ist Fangen und Route geworden; das Balancieren war
+daneben nur noch Beiwerk, das vom Blick auf die Geduldsbalken ablenkte. Der
+Code bleibt vollständig erhalten und lässt sich über den Schalter
+zurückholen — deshalb ein Schalter statt Löschen.
+
 ## 2026-09-21 — Pflanzen und wandernde Cutter, Trailer zieht abschnittsweise weiter
 
 Zwei Änderungen, die die Struktur des Paddocks umdrehen ([E] von Olli):

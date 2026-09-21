@@ -93,12 +93,30 @@ und lassen sich nicht in einer Szenendatei speichern.
   sofort ab – so holst du dir Stauden aktiv, statt auf seine Geduld zu warten. Je mittiger,
   desto besser: perfekt = kein Versatz, Streifer = −25 % Lohn und starker
   Versatz.
-- **Tragen - Ausgleichen:** linke/rechte Maustaste halten, um die Staude
-  gerade zu halten (verzeihend ausgelegt, nicht mehr die Herausforderung).
-- **`E`:** umsetzen (kurzer Stillstand, reduziert den Versatz, kostet
-  Energie).
 - **Abliefern:** mit Staude zum Trailer laufen – passiert automatisch.
-- Schicht endet automatisch, wenn die Energie leer ist.
+- Schicht endet, wenn die Energie leer ist. Dann öffnet sich der **Shop**.
+
+**Balancieren ist abgeschaltet.** Die Staude sitzt fest auf der Schulter;
+Maustasten und `E` (umsetzen) haben derzeit keine Funktion. Die Simulation
+steckt weiter im Code und lässt sich über `Balancing Enabled` in der
+`BalanceConfig` wieder einschalten (siehe
+[docs/DECISIONS.md](docs/DECISIONS.md)).
+
+## Shop
+
+Öffnet sich am Schichtende neben der Bilanz, bezahlt wird mit Geld:
+
+| Artikel | Effekt pro Stufe | Max | ab |
+|---|---|---|---|
+| Cutter anheuern | Ein Cutter mehr, das Paddock wächst mit | 4 | 60 $ |
+| Schulterpad | Fangradius +12 % | 5 | 40 $ |
+| Gute Stiefel | Laufgeschwindigkeit +8 % | 5 | 50 $ |
+| Tragegurt | Energieverbrauch beim Schleppen −10 % | 5 | 70 $ |
+| Instant-Kaffee | +15 Startenergie | 5 | 45 $ |
+
+Preise steigen je Stufe um Faktor 1,6 (GDD 4.5). Käufe verändern **nicht**
+das `BalanceConfig`-Asset, sondern eine Laufzeitkopie – sonst würde ein Kauf
+im Editor die Datei dauerhaft ändern.
 
 ## Code-Struktur
 
@@ -123,7 +141,9 @@ und lassen sich nicht in einer Szenendatei speichern.
 | `Gameplay/ShiftController.cs` | 3.1, 3.3 | Taktet alles, wertet Catch-Qualität aus, Schichtende |
 | `Gameplay/BananaBunchVisual.cs` | 3.8, 8.2 | Prozedurale Bananenstaude, Größe/Länge/Dicke aus `BunchData` |
 | `Gameplay/PlayerAnimator.cs` | 8.1 | Treibt den importierten Kenney-Walk-Zyklus der Spielfigur |
+| `Gameplay/UpgradeSystem.cs` | 5.2, 10.2 | Shop-Stufen, Kosten, Laufzeitkopie der Config |
 | `UI/HUDController.cs` | 9 | Minimales Schicht-HUD, zur Laufzeit erzeugt |
+| `UI/ShopPanel.cs` | 5.2, 9 | Shop am Schichtende |
 | `Bootstrap/GameBootstrap.cs` | – | Verdrahtet die Systeme, baut prozedurale Formen auf die Szenen-Anker |
 | `Editor/SceneSetupTool.cs` | – | Erzeugt `Main.unity` (Kamera, Kulisse, Spieler, Anker) – nur Editor |
 | `Util/SpriteFactory.cs` | 8.1 | Laedt importierte Sprites und zeichnet kantengeglaettete Vektorformen (abgerundete Rechtecke, Ellipsen) |

@@ -63,9 +63,16 @@ namespace BananaHumper.Bootstrap
 
             if (!SceneReferencesComplete()) return;
 
+            var systemsRoot = new GameObject("Systems");
+            // Upgrades zuerst: Sie liefern die Laufzeit-Config, mit der alle
+            // anderen Systeme rechnen - das Asset selbst bleibt unangetastet.
+            var upgrades = systemsRoot.AddComponent<UpgradeSystem>();
+            upgrades.Initialize(balanceConfig, cutters);
+            var runtimeConfig = upgrades.RuntimeConfig;
+
             int hiredCount = cutters.FindAll(c => c != null && c.isHired).Count;
-            float windowWidth = balanceConfig.paddockBaseWidth
-                              + balanceConfig.paddockWidthPerCutter * hiredCount;
+            float windowWidth = runtimeConfig.paddockBaseWidth
+                              + runtimeConfig.paddockWidthPerCutter * hiredCount;
 
             field = new GameObject("Paddock").AddComponent<PaddockField>();
             field.aheadDistance = windowWidth * 0.65f;
@@ -75,27 +82,26 @@ namespace BananaHumper.Bootstrap
             BuildTrailerShape(trailer.transform);
             SetupCutters(windowWidth);
 
-            player.config = balanceConfig;
+            player.config = runtimeConfig;
             player.ClearBunch();
-            trailer.config = balanceConfig;
+            trailer.config = runtimeConfig;
 
             if (cameraController != null)
             {
                 cameraController.target = player.transform;
             }
 
-            var systemsRoot = new GameObject("Systems");
             var balance = systemsRoot.AddComponent<BalanceController>();
             var energy = systemsRoot.AddComponent<EnergySystem>();
             var economy = systemsRoot.AddComponent<EconomySystem>();
             var shift = systemsRoot.AddComponent<ShiftController>();
             var hud = systemsRoot.AddComponent<HUDController>();
 
-            balance.config = balanceConfig;
-            energy.config = balanceConfig;
-            economy.config = balanceConfig;
+            balance.config = runtimeConfig;
+            energy.config = runtimeConfig;
+            economy.config = runtimeConfig;
 
-            shift.config = balanceConfig;
+            shift.config = runtimeConfig;
             shift.balance = balance;
             shift.energy = energy;
             shift.economy = economy;
@@ -106,7 +112,9 @@ namespace BananaHumper.Bootstrap
             shift.field = field;
             shift.Initialize();
 
-            hud.Bind(shift, balance, energy, economy, balanceConfig);
+            var shop = systemsRoot.AddComponent<ShopPanel>();
+            hud.Bind(shift, balance, energy, economy, runtimeConfig, upgrades);
+            hud.AttachShop(shop);
 
             shift.ResetRun();
             shift.StartShift(1);
@@ -158,7 +166,7 @@ namespace BananaHumper.Bootstrap
                 float t = hired.Count > 1 ? (float)slot / (hired.Count - 1) : 0.5f;
                 float x = player.PositionX + Mathf.Lerp(-windowWidth * 0.2f, windowWidth * 0.4f, t);
                 cutter.transform.position = new Vector3(x, GroundY, 0f);
-                BuildCutterFigure(cutter.transform);
+                PaddockVisuals.BuildCutter(cutter.transform);
             }
         }
 
@@ -170,35 +178,6 @@ namespace BananaHumper.Bootstrap
         {
             SpriteFactory.CreateQuad("Ground", new Color(0.30f, 0.33f, 0.17f), new Vector2(width, 2f), null,
                 new Vector3(centerX, GroundY - 1f, 0f), sortingOrder: -1);
-        }
-
-        /// <summary>
-        /// Prozedurale Cutter-Hintergrundfigur - bewusst ohne konkrete Hautfarbe/
-        /// Gesicht (GDD 1.7: nie ethnisch markiert). Entsteht unter dem
-        /// Stations-Anker aus der Szene.
-        /// </summary>
-        void BuildCutterFigure(Transform root)
-        {
-            var skin = new Color(0.85f, 0.68f, 0.5f);
-            var vest = new Color(0.9f, 0.55f, 0.15f);
-            var pants = new Color(0.25f, 0.22f, 0.2f);
-            var hatColor = new Color(0.55f, 0.4f, 0.2f);
-            var blade = new Color(0.8f, 0.82f, 0.85f);
-
-            var figure = new GameObject("CutterFigure").transform;
-            figure.SetParent(root, false);
-
-            SpriteFactory.CreateRoundedQuad("Legs", pants, new Vector2(0.5f, 0.7f), 0.3f, figure, new Vector3(0f, 0.35f, 0f), 0);
-            SpriteFactory.CreateRoundedQuad("Torso", vest, new Vector2(0.62f, 0.75f), 0.4f, figure, new Vector3(0f, 0.95f, 0f), 1);
-            SpriteFactory.CreateEllipse("Head", skin, new Vector2(0.4f, 0.4f), figure, new Vector3(0f, 1.5f, 0f), 2);
-            SpriteFactory.CreateEllipse("HatBrim", hatColor, new Vector2(0.62f, 0.18f), figure, new Vector3(0f, 1.62f, 0f), 3);
-            SpriteFactory.CreateRoundedQuad("HatTop", hatColor, new Vector2(0.32f, 0.22f), 0.5f, figure, new Vector3(0f, 1.74f, 0f), 3);
-
-            var machete = new GameObject("Machete").transform;
-            machete.SetParent(figure, false);
-            machete.localPosition = new Vector3(0.42f, 1.05f, 0f);
-            machete.localRotation = Quaternion.Euler(0f, 0f, -35f);
-            SpriteFactory.CreateRoundedQuad("Blade", blade, new Vector2(0.1f, 0.65f), 0.5f, machete, Vector3.zero, 2);
         }
 
         /// <summary>Prozeduraler Trailer (rundes Vektor-Composite), unter dem Szenen-Anker.</summary>

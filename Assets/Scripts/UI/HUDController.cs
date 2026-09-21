@@ -32,6 +32,8 @@ namespace BananaHumper.UI
         Text endPanelText;
 
         RectTransform canvasRect;
+        ShopPanel shop;
+        UpgradeSystem upgrades;
         readonly List<StationMarker> stationMarkers = new List<StationMarker>();
         readonly List<FloatingLabel> floatingLabels = new List<FloatingLabel>();
 
@@ -58,13 +60,14 @@ namespace BananaHumper.UI
             public float elapsed;
         }
 
-        public void Bind(ShiftController shift, BalanceController balance, EnergySystem energy, EconomySystem economy, BalanceConfig config)
+        public void Bind(ShiftController shift, BalanceController balance, EnergySystem energy, EconomySystem economy, BalanceConfig config, UpgradeSystem upgrades)
         {
             this.shift = shift;
             this.balance = balance;
             this.energy = energy;
             this.economy = economy;
             this.config = config;
+            this.upgrades = upgrades;
 
             BuildCanvas();
 
@@ -254,32 +257,8 @@ namespace BananaHumper.UI
             var textRt = endPanelText.GetComponent<RectTransform>();
             textRt.sizeDelta = new Vector2(380, 180);
 
-            var buttonGo = new GameObject("RestartButton");
-            buttonGo.transform.SetParent(endPanel.transform, false);
-            var btnRt = buttonGo.AddComponent<RectTransform>();
-            btnRt.anchorMin = new Vector2(0.5f, 0f);
-            btnRt.anchorMax = new Vector2(0.5f, 0f);
-            btnRt.pivot = new Vector2(0.5f, 0f);
-            btnRt.anchoredPosition = new Vector2(0, 20);
-            btnRt.sizeDelta = new Vector2(220, 44);
-            var btnImg = buttonGo.AddComponent<Image>();
-            btnImg.color = new Color(0.2f, 0.5f, 0.25f);
-            var button = buttonGo.AddComponent<Button>();
-
-            var btnText = CreateText(buttonGo.transform, "Label", Vector2.zero, TextAnchor.MiddleCenter, 22);
-            var btnTextRt = btnText.GetComponent<RectTransform>();
-            btnTextRt.anchorMin = Vector2.zero;
-            btnTextRt.anchorMax = Vector2.one;
-            btnTextRt.offsetMin = Vector2.zero;
-            btnTextRt.offsetMax = Vector2.zero;
-            btnText.text = "Naechste Schicht";
-            btnText.alignment = TextAnchor.MiddleCenter;
-
-            button.onClick.AddListener(() =>
-            {
-                endPanel.SetActive(false);
-                shift.StartShift(shift.Day + 1);
-            });
+            // Der Weiter-Button sitzt im Shop-Panel daneben: Erst ausgeben,
+            // dann weiterspielen (GDD 9).
 
             endPanel.SetActive(false);
         }
@@ -396,6 +375,19 @@ namespace BananaHumper.UI
             catchTextTimer = 1.5f;
         }
 
+        /// <summary>Shop und Schichtende gehoeren zusammen: erst die Bilanz, dann ausgeben (GDD 9).</summary>
+        public void AttachShop(ShopPanel shop)
+        {
+            this.shop = shop;
+            shop.Build(canvasRect, upgrades, economy, GetFont);
+            shop.OnNextShiftRequested += () =>
+            {
+                endPanel.SetActive(false);
+                shop.Hide();
+                shift.StartShift(shift.Day + 1);
+            };
+        }
+
         void ShowSummary(ShiftSummary summary)
         {
             endPanelText.text =
@@ -406,6 +398,7 @@ namespace BananaHumper.UI
                 $"Verdienst: $ {summary.MoneyEarned:0}\n" +
                 $"Erfahrung: {summary.ExperienceEarned:0.0}";
             endPanel.SetActive(true);
+            shop?.Show();
         }
 
         void Update()
@@ -420,7 +413,10 @@ namespace BananaHumper.UI
             if (balance != null)
             {
                 bool carrying = bunch != null;
-                angleText.text = carrying ? $"Neigung {balance.Theta * Mathf.Rad2Deg:0.0} deg" : string.Empty;
+                // Ohne Balancieren gibt es keine Neigung anzuzeigen.
+                angleText.text = carrying && config.balancingEnabled
+                    ? $"Neigung {balance.Theta * Mathf.Rad2Deg:0.0} deg"
+                    : string.Empty;
                 angleText.color = balance.IsRedWarning ? new Color(0.9f, 0.2f, 0.2f) : Color.white;
             }
 

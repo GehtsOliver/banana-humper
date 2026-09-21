@@ -42,6 +42,15 @@ namespace BananaHumper.Gameplay
             AddExperience(bunch.ExperienceValue(config) * config.failedTripExperienceFraction);
         }
 
+        /// <summary>Kauf im Shop (GDD 5.2). Gibt false zurueck, wenn das Geld nicht reicht.</summary>
+        public bool TrySpend(double amount)
+        {
+            if (amount > Money) return false;
+            Money -= amount;
+            OnMoneyChanged?.Invoke(Money);
+            return true;
+        }
+
         void AddMoney(double amount)
         {
             Money += amount;

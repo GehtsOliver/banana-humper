@@ -189,6 +189,15 @@ Spieler von kurzen, befriedigenden Incremental- und Roguelite-Spielen (Vampire S
 - Der **Versatz** (`offset`, −1 bis +1) bleibt während des Tragens erhalten und zieht die Staude zur Seite (3.4). Sauberes Fangen macht also den ganzen restlichen Weg leichter — hier liegt die verbliebene Skill-Tiefe.
 
 ### 3.4 Schleppen [Demo] **[E]**
+
+> **Balancieren ist seit dem Graybox-Test abgeschaltet [E].** Die Staude
+> sitzt fest auf der Schulter: kein Wackeln, kein Fallenlassen, keine
+> Maustasten. Grund: Der Kern ist Fangen und Routenwahl geworden, und das
+> Balancieren war daneben nur noch Beiwerk, das vom Blick auf die
+> Geduldsbalken ablenkte. Die Simulation bleibt im Code und lässt sich über
+> `balancingEnabled` in der BalanceConfig wieder einschalten. Der Rest
+> dieses Abschnitts beschreibt sie für diesen Fall.
+
 Die Staude soll sich schwer anfühlen, aber nicht mehr der eigentliche Gegner sein.
 
 - Gehen mit `A`/`D`, rennen mit `Shift` (schneller, mehr Wackeln, mehr Energie).
@@ -369,7 +378,13 @@ Zwei getrennte Systeme mit zwei Währungen, **kein Skill Tree** **[E]**. Beide s
 | **Körper** | Erfahrung | Der Körper gewöhnt sich durch Arbeit, der Spieler verteilt die Erfahrung selbst | [Demo] |
 | **Shop** | Geld | Ausrüstung und Verpflegung kaufen | [Demo] |
 
-### 5.1 Körper (Erfahrung)
+### 5.1 Körper (Erfahrung) — **noch nicht gebaut**
+> Die Stufen unten stammen aus v0.8 und zielen teils auf Werte, die es seit
+> v0.9 nicht mehr gibt (`comfortAngle`, `stressRate`, Schwerpunkt-Markierung).
+> Erfahrung wird bereits verdient und angezeigt, aber noch nicht ausgegeben.
+> Vor dem Bauen anzupassen: sinnvoll wären Energie, Lauf- und Fangwerte
+> analog zum Shop (5.2).
+
 **Erfahrung verdienen [Demo] [A]:** 1 Erfahrung pro 10 kg abgelieferter Staude. Fallen gelassene Stauden geben 50 % davon für die bis dahin getragene Last. Verpasste Stauden geben nichts — man hat sie nie getragen. So bringt auch eine schlechte Schicht Fortschritt.
 
 | Körper-Stufe | Effekt pro Stufe | Max | Basiskosten | Version |
@@ -385,12 +400,33 @@ Zwei getrennte Systeme mit zwei Währungen, **kein Skill Tree** **[E]**. Beide s
 | Zweite Staude | Zwei Stauden gleichzeitig (zählt doppelt, doppelter Lohn, weightFactor ×1,7) | 1 | 500 Erfahrung | [V1] |
 
 ### 5.2 Shop (Geld)
-**Ausrüstung**
+
+**Gebaut in Stufe A [E]** — flache Liste, kein Skill Tree, geöffnet am
+Schichtende. Alle Effekte zielen auf den Kern-Loop seit v0.9 (Fangen,
+Laufen, Schleppen); die alten Artikel zielten auf Balance-Werte, die kaum
+noch zählen.
+
 | Artikel | Effekt pro Stufe | Max | Basiskosten | Version |
 |---|---|---|---|---|
-| Schulterpad | maxAngle +3°, offsetTorque −10 % | 5 | 40 $ | [Demo] |
-| Handschuhe | Reaktionszeit Spinne +0,5 s | 3 | 50 $ | [Demo] |
-| Gummistiefel | Rutsch-Impulse bei Regen −25 % | 3 | 80 $ | [Demo] |
+| **Cutter anheuern** | Ein Cutter mehr, das Paddock wächst mit | 4 | 60 $ | [Demo] |
+| **Schulterpad** | Fangradius +12 % | 5 | 40 $ | [Demo] |
+| **Gute Stiefel** | Laufgeschwindigkeit +8 % | 5 | 50 $ | [Demo] |
+| **Tragegurt** | Energieverbrauch beim Schleppen −10 % | 5 | 70 $ | [Demo] |
+| **Instant-Kaffee** | +15 Startenergie | 5 | 45 $ | [Demo] |
+
+Kosten nach 4.5 (`basis * 1,6^stufe`). Der erste Cutter kostet damit rund
+ein bis zwei Schichten Verdienst, ein voll ausgebauter Artikel ein
+Vielfaches davon.
+
+**Cutter anheuern ist die Leitwährung des Fortschritts:** Jeder neue Cutter
+bringt mehr Stauden *und* ein größeres Feld — mehr Ertrag bei mehr Weg. Die
+anderen Artikel machen genau diesen Weg bezahlbar.
+
+**Später [V1], noch nicht gebaut**
+| Artikel | Effekt pro Stufe | Max | Basiskosten | Version |
+|---|---|---|---|---|
+| Handschuhe | Reaktionszeit Spinne +0,5 s | 3 | 50 $ | [V1] |
+| Gummistiefel | Rutsch-Impulse bei Regen −25 % | 3 | 80 $ | [V1] |
 | Akubra-Hut | Energieverbrauch bei Hitze −15 % | 3 | 120 $ | [V1] |
 | Wasserflasche | +5 Energie pro Abgabe | 5 | 100 $ | [V1] |
 

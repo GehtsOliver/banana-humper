@@ -43,6 +43,35 @@ namespace BananaHumper.Gameplay
         }
 
         /// <summary>
+        /// Cutter-Figur - bewusst ohne konkrete Hautfarbe und Gesichtszuege
+        /// (GDD 1.7: nie ethnisch markiert). Wird auch beim Anheuern im Shop
+        /// gebraucht, deshalb hier und nicht in GameBootstrap.
+        /// </summary>
+        public static void BuildCutter(Transform root)
+        {
+            var skin = new Color(0.85f, 0.68f, 0.5f);
+            var vest = new Color(0.9f, 0.55f, 0.15f);
+            var pants = new Color(0.25f, 0.22f, 0.2f);
+            var hatColor = new Color(0.55f, 0.4f, 0.2f);
+            var blade = new Color(0.8f, 0.82f, 0.85f);
+
+            var figure = new GameObject("CutterFigure").transform;
+            figure.SetParent(root, false);
+
+            SpriteFactory.CreateRoundedQuad("Legs", pants, new Vector2(0.5f, 0.7f), 0.3f, figure, new Vector3(0f, 0.35f, 0f), 0);
+            SpriteFactory.CreateRoundedQuad("Torso", vest, new Vector2(0.62f, 0.75f), 0.4f, figure, new Vector3(0f, 0.95f, 0f), 1);
+            SpriteFactory.CreateEllipse("Head", skin, new Vector2(0.4f, 0.4f), figure, new Vector3(0f, 1.5f, 0f), 2);
+            SpriteFactory.CreateEllipse("HatBrim", hatColor, new Vector2(0.62f, 0.18f), figure, new Vector3(0f, 1.62f, 0f), 3);
+            SpriteFactory.CreateRoundedQuad("HatTop", hatColor, new Vector2(0.32f, 0.22f), 0.5f, figure, new Vector3(0f, 1.74f, 0f), 3);
+
+            var machete = new GameObject("Machete").transform;
+            machete.SetParent(figure, false);
+            machete.localPosition = new Vector3(0.42f, 1.05f, 0f);
+            machete.localRotation = Quaternion.Euler(0f, 0f, -35f);
+            SpriteFactory.CreateRoundedQuad("Blade", blade, new Vector2(0.1f, 0.65f), 0.5f, machete, Vector3.zero, 2);
+        }
+
+        /// <summary>
         /// Stein (GDD 3.9). Die Form richtet sich exakt nach halfWidth und
         /// clearHeight, damit der sichtbare Stein das ist, woran man
         /// haengenbleibt - keine unsichtbaren Raender.
