@@ -119,16 +119,22 @@ namespace BananaHumper.Config
         public float stumbleWobbleImpulse = 1.6f;
 
         [Header("Energie (4.2)")]
-        // 110 zielt auf ~35 s reine Tragezeit: Eine Tag-1-Staude (Ø 43 kg)
-        // kostet 2.0 + 43/40 = 3.08 pro Sekunde, macht 110 / 3.08 ≈ 36 s.
-        // Laufen ohne Staude kostet nichts, die Schicht dauert in Echtzeit
-        // also laenger - das Budget zaehlt getragene Kilogramm mal Weg.
+        // Alles kostet Energie, gestaffelt nach Anstrengung: Dasein am
+        // wenigsten, Laufen mehr, Rennen deutlich mehr, Schleppen am meisten.
+        // Mit den Startwerten unten und typischer Spielweise (grob halb leer
+        // laufen, ein Drittel schleppen) haelt eine Schicht rund 75 Sekunden -
+        // passend zu den 45-90 s aus GDD Kapitel 2.
         public float startEnergy = 110f;
-        // Laufen ohne Staude kostet nichts (4.2): Energie ist ein Budget aus
-        // getragenen Kilogramm mal Weg, das macht schwere Stauden zur Abwaegung.
-        public float energyPerSecondBase = 2.0f;
-        public float energyPerSecondPerWeight = 1f / 40f;
-        public float runEnergyMultiplier = 1.6f;
+        [Tooltip("Grundverbrauch pro Sekunde, auch im Stehen.")]
+        public float energyIdlePerSecond = 0.15f;
+        [Tooltip("Zusaetzlich pro Sekunde beim Laufen. Sinkt mit Ausdauer.")]
+        public float energyWalkPerSecond = 0.6f;
+        [Tooltip("Faktor auf den Laufverbrauch beim Rennen.")]
+        public float runEnergyMultiplier = 1.8f;
+        [Tooltip("Zusaetzlich pro Sekunde mit Staude, unabhaengig vom Gewicht. Sinkt mit Staerke.")]
+        public float energyCarryPerSecond = 1.4f;
+        [Tooltip("Zusaetzlich pro Sekunde je Kilogramm. Sinkt mit Staerke.")]
+        public float energyCarryPerWeight = 1f / 50f;
         public float dropEnergyPenalty = 15f;
 
         [Header("Wirtschaft (4.3, 5.1)")]

@@ -4,7 +4,16 @@ using BananaHumper.Config;
 
 namespace BananaHumper.Gameplay
 {
-    /// <summary>Energy budget for one Schicht (GDD 4.2).</summary>
+    /// <summary>
+    /// Energiebudget einer Schicht (GDD 4.2). Alles kostet Energie, gestaffelt
+    /// nach Anstrengung:
+    ///
+    ///   Dasein  &lt;  Laufen  &lt;  Rennen  &lt;  Schleppen
+    ///
+    /// Die Lauf-Anteile sinken mit der **Ausdauer**, der Schlepp-Anteil mit der
+    /// **Staerke** (GDD 5.1) - beide Attribute greifen also an genau der
+    /// Stelle, die ihr Name verspricht.
+    /// </summary>
     public class EnergySystem : MonoBehaviour
     {
         public BalanceConfig config;
@@ -13,6 +22,11 @@ namespace BananaHumper.Gameplay
 
         public float Current { get; private set; }
         public float Max { get; private set; }
+
+        /// <summary>Faktor auf alle Lauf-Kosten, kommt aus der Ausdauer (1 = ungeuebt).</summary>
+        public float StaminaFactor { get; set; } = 1f;
+        /// <summary>Faktor auf alle Schlepp-Kosten, kommt aus der Staerke.</summary>
+        public float StrengthFactor { get; set; } = 1f;
 
         bool depletedFired;
 
@@ -23,19 +37,30 @@ namespace BananaHumper.Gameplay
             depletedFired = false;
         }
 
-        public void ConsumeCarrying(float weight, bool isRunning, float dt)
+        /// <summary>Verbrauch eines Frames aus dem aktuellen Zustand der Figur.</summary>
+        public void ConsumeTick(bool isMoving, bool isRunning, bool isCarrying, float weight, float dt)
         {
-            float perSecond = config.energyPerSecondBase + weight * config.energyPerSecondPerWeight;
-            if (isRunning) perSecond *= config.runEnergyMultiplier;
+            float perSecond = config.energyIdlePerSecond;
+
+            if (isMoving)
+            {
+                float movement = config.energyWalkPerSecond;
+                if (isRunning) movement *= config.runEnergyMultiplier;
+                perSecond += movement * StaminaFactor;
+            }
+
+            if (isCarrying)
+            {
+                float carry = config.energyCarryPerSecond + weight * config.energyCarryPerWeight;
+                perSecond += carry * StrengthFactor;
+            }
+
             Spend(perSecond * dt);
         }
 
-        // Laufen ohne Staude kostet seit v0.9 nichts (GDD 4.2): Energie ist ein
-        // Budget aus getragenen Kilogramm mal Weg. Genau das macht schwere
-        // Stauden zur Abwaegung statt zur automatisch besseren Wahl.
         public void ApplyDropPenalty() => Spend(config.dropEnergyPenalty);
         public void ApplyRepositionCost() => Spend(config.repositionEnergyCost);
-        public void ApplyStumbleCost() => Spend(config.stumbleEnergyCost);
+        public void ApplyStumbleCost(float factor = 1f) => Spend(config.stumbleEnergyCost * factor);
 
         void Spend(float amount)
         {

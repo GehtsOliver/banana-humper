@@ -8,8 +8,10 @@ using BananaHumper.Util;
 namespace BananaHumper.UI
 {
     /// <summary>
-    /// Shop am Schichtende (GDD 5.2, 9). Flache Liste ohne Abhaengigkeiten -
-    /// kein Skill Tree [E]. Bezahlt wird mit Geld.
+    /// Feierabend-Bildschirm mit beiden Fortschritts-Spuren (GDD 5, 9):
+    /// links der Koerper (Erfahrung), rechts die Ausruestung (Geld). Flache
+    /// Listen ohne Abhaengigkeiten - kein Skill Tree [E]. Zwei Spalten, weil
+    /// zwei getrennte Waehrungen sonst dauernd verwechselt werden.
     ///
     /// Erscheint zwischen den Schichten statt mitten im Spiel: Der Kern-Loop
     /// soll nicht fuer Menues unterbrochen werden, und Anheuern veraendert die
@@ -45,25 +47,37 @@ namespace BananaHumper.UI
             rect.anchorMin = new Vector2(0.5f, 0.5f);
             rect.anchorMax = new Vector2(0.5f, 0.5f);
             rect.pivot = new Vector2(0.5f, 0.5f);
-            rect.sizeDelta = new Vector2(560, 420);
-            rect.anchoredPosition = new Vector2(320, 0);
+            rect.sizeDelta = new Vector2(760, 470);
+            rect.anchoredPosition = new Vector2(250, 0);
 
             var background = panel.AddComponent<Image>();
             background.sprite = SpriteFactory.Square();
             background.color = new Color(0.06f, 0.09f, 0.06f, 0.92f);
 
             var title = CreateText(panel.transform, "Title", new Vector2(20, -16), 26, TextAnchor.UpperLeft);
-            title.text = "Shop";
-            moneyLine = CreateText(panel.transform, "Money", new Vector2(20, -48), 20, TextAnchor.UpperLeft);
+            title.text = "Feierabend";
+            moneyLine = CreateText(panel.transform, "Wallet", new Vector2(20, -48), 20, TextAnchor.UpperLeft);
+            moneyLine.GetComponent<RectTransform>().sizeDelta = new Vector2(720, 30);
 
-            float y = -84f;
+            // Zwei Spalten, weil es zwei Waehrungen sind (GDD 5): links der
+            // Koerper, rechts die Ausruestung. Getrennt zu zeigen macht sofort
+            // klar, dass Erfahrung nicht fuer Stiefel taugt.
+            CreateHeading(panel.transform, new Vector2(20, -84), "Koerper (Erfahrung)");
+            CreateHeading(panel.transform, new Vector2(390, -84), "Ausruestung (Geld)");
+
+            float leftY = -118f;
+            float rightY = -118f;
             foreach (var definition in UpgradeSystem.Catalogue)
             {
-                rows.Add(CreateRow(panel.transform, definition, y));
-                y -= 58f;
+                bool money = definition.Currency == UpgradeCurrency.Money;
+                float column = money ? 390f : 20f;
+                float rowY = money ? rightY : leftY;
+                rows.Add(CreateRow(panel.transform, definition, column, rowY));
+                if (money) rightY -= 66f; else leftY -= 66f;
             }
 
-            var next = CreateButton(panel.transform, "NextShift", new Vector2(20, y - 12f), new Vector2(520, 44),
+            float y = Mathf.Min(leftY, rightY);
+            var next = CreateButton(panel.transform, "NextShift", new Vector2(20, y - 12f), new Vector2(720, 44),
                 "Naechste Schicht", new Color(0.2f, 0.5f, 0.25f));
             next.onClick.AddListener(() => OnNextShiftRequested?.Invoke());
 
@@ -74,12 +88,20 @@ namespace BananaHumper.UI
         /// <summary>Das erzeugte Panel - die Komponente selbst sitzt auf dem Systems-Objekt.</summary>
         GameObject root;
 
-        Row CreateRow(Transform parent, UpgradeDefinition definition, float y)
+        Text CreateHeading(Transform parent, Vector2 position, string caption)
         {
-            var label = CreateText(parent, $"{definition.Id}_Label", new Vector2(20, y), 18, TextAnchor.UpperLeft);
-            label.GetComponent<RectTransform>().sizeDelta = new Vector2(360, 52);
+            var heading = CreateText(parent, caption, position, 20, TextAnchor.UpperLeft);
+            heading.text = caption;
+            heading.color = new Color(0.85f, 0.8f, 0.5f);
+            return heading;
+        }
 
-            var button = CreateButton(parent, $"{definition.Id}_Buy", new Vector2(396, y), new Vector2(144, 40),
+        Row CreateRow(Transform parent, UpgradeDefinition definition, float x, float y)
+        {
+            var label = CreateText(parent, $"{definition.Id}_Label", new Vector2(x, y), 16, TextAnchor.UpperLeft);
+            label.GetComponent<RectTransform>().sizeDelta = new Vector2(230, 60);
+
+            var button = CreateButton(parent, $"{definition.Id}_Buy", new Vector2(x + 236, y), new Vector2(110, 40),
                 "Kaufen", new Color(0.25f, 0.35f, 0.5f));
             var row = new Row { id = definition.Id, button = button, label = label };
             button.onClick.AddListener(() =>
@@ -100,7 +122,7 @@ namespace BananaHumper.UI
 
         void Refresh()
         {
-            moneyLine.text = $"Guthaben: $ {economy.Money:0}";
+            moneyLine.text = $"Geld: $ {economy.Money:0}          Erfahrung: {economy.Experience:0.0}";
 
             foreach (var row in rows)
             {
@@ -112,8 +134,11 @@ namespace BananaHumper.UI
                 row.label.text = $"{definition.Name}  (Stufe {level}/{definition.MaxLevel})\n{definition.Effect}";
                 row.label.color = maxed ? new Color(0.6f, 0.6f, 0.6f) : Color.white;
 
+                string price = definition.Currency == UpgradeCurrency.Money
+                    ? $"$ {upgrades.CostOf(row.id)}"
+                    : $"{upgrades.CostOf(row.id)} EP";
                 var buttonText = row.button.GetComponentInChildren<Text>();
-                buttonText.text = maxed ? "Ausgebaut" : $"$ {upgrades.CostOf(row.id)}";
+                buttonText.text = maxed ? "Ausgebaut" : price;
 
                 row.button.interactable = affordable;
                 var image = row.button.GetComponent<Image>();

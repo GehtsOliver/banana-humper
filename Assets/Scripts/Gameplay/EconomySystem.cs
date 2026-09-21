@@ -42,12 +42,21 @@ namespace BananaHumper.Gameplay
             AddExperience(bunch.ExperienceValue(config) * config.failedTripExperienceFraction);
         }
 
-        /// <summary>Kauf im Shop (GDD 5.2). Gibt false zurueck, wenn das Geld nicht reicht.</summary>
+        /// <summary>Kauf von Ausruestung (GDD 5.2). Gibt false zurueck, wenn das Geld nicht reicht.</summary>
         public bool TrySpend(double amount)
         {
             if (amount > Money) return false;
             Money -= amount;
             OnMoneyChanged?.Invoke(Money);
+            return true;
+        }
+
+        /// <summary>Koerper-Stufe verbessern (GDD 5.1). Erfahrung ist die zweite Waehrung.</summary>
+        public bool TrySpendExperience(double amount)
+        {
+            if (amount > Experience) return false;
+            Experience -= amount;
+            OnExperienceChanged?.Invoke(Experience);
             return true;
         }
 

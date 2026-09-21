@@ -7,16 +7,29 @@ namespace BananaHumper.Gameplay
 {
     public enum UpgradeId
     {
+        // Attribute (Erfahrung, GDD 5.1)
+        MaxEnergy,
+        Strength,
+        Stamina,
+        Legs,
+        // Ausruestung (Geld, GDD 5.2)
         HireCutter,
         ShoulderPad,
-        Boots,
-        CarryStrap,
+        RubberBoots,
         Coffee
+    }
+
+    /// <summary>Zwei getrennte Waehrungen, zwei getrennte Listen (GDD 5).</summary>
+    public enum UpgradeCurrency
+    {
+        Experience,
+        Money
     }
 
     public class UpgradeDefinition
     {
         public UpgradeId Id;
+        public UpgradeCurrency Currency;
         public string Name;
         public string Effect;
         public int MaxLevel;
@@ -24,15 +37,18 @@ namespace BananaHumper.Gameplay
     }
 
     /// <summary>
-    /// Shop-Stufen und ihre Wirkung (GDD 5.2). Gekauft wird mit Geld, die Liste
-    /// ist flach ohne Abhaengigkeiten - kein Skill Tree [E].
+    /// Fortschritt in zwei Spuren (GDD 5): **Erfahrung** verbessert den Koerper
+    /// (Attribute), **Geld** kauft Ausruestung. Beide sind flache Listen ohne
+    /// Abhaengigkeiten - kein Skill Tree [E].
     ///
-    /// Wichtig fuers Verstaendnis: Die Stufen aendern **nicht** das
-    /// BalanceConfig-Asset. Stattdessen gibt es eine Laufzeitkopie, die bei
-    /// jedem Kauf frisch aus den Basiswerten abgeleitet und dann mit allen
-    /// Stufen ueberschrieben wird. Ohne das wuerde ein Kauf im Editor die
-    /// Asset-Datei dauerhaft veraendern, und die Effekte wuerden sich bei
-    /// jedem Kauf erneut aufaddieren (GDD 10.2, "Stats-Prinzip").
+    /// Die Attribute greifen genau dort, wo ihr Name es verspricht:
+    /// Staerke senkt die Schlepp-Kosten, Ausdauer die Lauf-Kosten.
+    ///
+    /// Wichtig: Stufen aendern **nicht** das BalanceConfig-Asset. Es gibt eine
+    /// Laufzeitkopie, die bei jedem Kauf frisch aus den Basiswerten abgeleitet
+    /// und dann mit allen Stufen ueberschrieben wird. Ohne das wuerde ein Kauf
+    /// im Editor die Asset-Datei dauerhaft veraendern, und die Effekte wuerden
+    /// sich bei jedem Kauf erneut aufaddieren (GDD 10.2, "Stats-Prinzip").
     /// </summary>
     public class UpgradeSystem : MonoBehaviour
     {
@@ -40,56 +56,71 @@ namespace BananaHumper.Gameplay
         {
             new UpgradeDefinition
             {
-                Id = UpgradeId.HireCutter, Name = "Cutter anheuern",
-                Effect = "Ein Cutter mehr im Paddock, das Feld wird groesser",
-                MaxLevel = 4, BaseCost = 60f,
+                Id = UpgradeId.MaxEnergy, Currency = UpgradeCurrency.Experience, Name = "Energie",
+                Effect = "+20 maximale Energie", MaxLevel = 10, BaseCost = 12f,
             },
             new UpgradeDefinition
             {
-                Id = UpgradeId.ShoulderPad, Name = "Schulterpad",
-                Effect = "Fangradius +12 % - Stauden lassen sich unsauberer fangen",
-                MaxLevel = 5, BaseCost = 40f,
+                Id = UpgradeId.Strength, Currency = UpgradeCurrency.Experience, Name = "Staerke",
+                Effect = "Energieverbrauch beim Schleppen -8 %", MaxLevel = 10, BaseCost = 10f,
             },
             new UpgradeDefinition
             {
-                Id = UpgradeId.Boots, Name = "Gute Stiefel",
-                Effect = "Laufgeschwindigkeit +8 %",
-                MaxLevel = 5, BaseCost = 50f,
+                Id = UpgradeId.Stamina, Currency = UpgradeCurrency.Experience, Name = "Ausdauer",
+                Effect = "Energieverbrauch beim Laufen und Rennen -8 %", MaxLevel = 10, BaseCost = 10f,
             },
             new UpgradeDefinition
             {
-                Id = UpgradeId.CarryStrap, Name = "Tragegurt",
-                Effect = "Energieverbrauch beim Schleppen -10 %",
-                MaxLevel = 5, BaseCost = 70f,
+                Id = UpgradeId.Legs, Currency = UpgradeCurrency.Experience, Name = "Laufgeschwindigkeit",
+                Effect = "+6 % Tempo", MaxLevel = 8, BaseCost = 18f,
+            },
+
+            new UpgradeDefinition
+            {
+                Id = UpgradeId.HireCutter, Currency = UpgradeCurrency.Money, Name = "Cutter anheuern",
+                Effect = "Ein Cutter mehr, das Feld wird groesser", MaxLevel = 4, BaseCost = 60f,
             },
             new UpgradeDefinition
             {
-                Id = UpgradeId.Coffee, Name = "Instant-Kaffee",
-                Effect = "+15 Startenergie",
-                MaxLevel = 5, BaseCost = 45f,
+                Id = UpgradeId.ShoulderPad, Currency = UpgradeCurrency.Money, Name = "Schulterpad",
+                Effect = "Fangradius +12 %", MaxLevel = 5, BaseCost = 40f,
+            },
+            new UpgradeDefinition
+            {
+                Id = UpgradeId.RubberBoots, Currency = UpgradeCurrency.Money, Name = "Gummistiefel",
+                Effect = "Stolpern kostet -30 % Energie und bremst kuerzer", MaxLevel = 3, BaseCost = 80f,
+            },
+            new UpgradeDefinition
+            {
+                Id = UpgradeId.Coffee, Currency = UpgradeCurrency.Money, Name = "Instant-Kaffee",
+                Effect = "Schichtstart mit +15 Energie ueber dem Maximum", MaxLevel = 3, BaseCost = 45f,
             },
         };
 
         public event Action OnUpgradesChanged;
 
         BalanceConfig baseConfig;
-        BalanceConfig runtimeConfig;
+        EnergySystem energy;
         List<Cutter> cutters;
         readonly Dictionary<UpgradeId, int> levels = new Dictionary<UpgradeId, int>();
 
         /// <summary>Die Werte, mit denen tatsaechlich gespielt wird - nie das Asset selbst.</summary>
-        public BalanceConfig RuntimeConfig => runtimeConfig;
+        public BalanceConfig RuntimeConfig { get; private set; }
 
-        public void Initialize(BalanceConfig baseConfig, List<Cutter> cutters)
+        /// <summary>Energie ueber dem Maximum zum Schichtstart (Instant-Kaffee).</summary>
+        public float StartEnergyBonus => 15f * LevelOf(UpgradeId.Coffee);
+        /// <summary>Faktor auf die Stolper-Strafe (Gummistiefel).</summary>
+        public float StumbleFactor => Mathf.Pow(0.7f, LevelOf(UpgradeId.RubberBoots));
+
+        public void Initialize(BalanceConfig baseConfig, EnergySystem energy, List<Cutter> cutters)
         {
             this.baseConfig = baseConfig;
+            this.energy = energy;
             this.cutters = cutters;
 
-            runtimeConfig = ScriptableObject.CreateInstance<BalanceConfig>();
+            RuntimeConfig = ScriptableObject.CreateInstance<BalanceConfig>();
             foreach (var definition in Catalogue) levels[definition.Id] = 0;
 
-            // Bereits in der Szene angeheuerte Cutter zaehlen nicht als gekaufte
-            // Stufe - sie sind die Startmannschaft.
             ApplyAll();
         }
 
@@ -108,7 +139,7 @@ namespace BananaHumper.Gameplay
         {
             var definition = Definition(id);
             if (definition == null) return true;
-            if (id == UpgradeId.HireCutter) return NextUnhiredCutter() == null || LevelOf(id) >= definition.MaxLevel;
+            if (id == UpgradeId.HireCutter && NextUnhiredCutter() == null) return true;
             return LevelOf(id) >= definition.MaxLevel;
         }
 
@@ -122,13 +153,21 @@ namespace BananaHumper.Gameplay
 
         public bool CanAfford(UpgradeId id, EconomySystem economy)
         {
-            return !IsMaxed(id) && economy.Money >= CostOf(id);
+            if (IsMaxed(id)) return false;
+            var definition = Definition(id);
+            double available = definition.Currency == UpgradeCurrency.Money ? economy.Money : economy.Experience;
+            return available >= CostOf(id);
         }
 
         public bool TryBuy(UpgradeId id, EconomySystem economy)
         {
             if (!CanAfford(id, economy)) return false;
-            if (!economy.TrySpend(CostOf(id))) return false;
+
+            var definition = Definition(id);
+            bool paid = definition.Currency == UpgradeCurrency.Money
+                ? economy.TrySpend(CostOf(id))
+                : economy.TrySpendExperience(CostOf(id));
+            if (!paid) return false;
 
             levels[id] = LevelOf(id) + 1;
             if (id == UpgradeId.HireCutter) HireNextCutter();
@@ -165,16 +204,23 @@ namespace BananaHumper.Gameplay
         /// </summary>
         void ApplyAll()
         {
-            JsonUtility.FromJsonOverwrite(JsonUtility.ToJson(baseConfig), runtimeConfig);
+            JsonUtility.FromJsonOverwrite(JsonUtility.ToJson(baseConfig), RuntimeConfig);
 
-            runtimeConfig.catchRadius *= Mathf.Pow(1.12f, LevelOf(UpgradeId.ShoulderPad));
-            runtimeConfig.walkSpeed *= Mathf.Pow(1.08f, LevelOf(UpgradeId.Boots));
+            // Attribute (Erfahrung)
+            RuntimeConfig.startEnergy += 20f * LevelOf(UpgradeId.MaxEnergy);
+            RuntimeConfig.walkSpeed *= Mathf.Pow(1.06f, LevelOf(UpgradeId.Legs));
 
-            float strap = Mathf.Pow(0.9f, LevelOf(UpgradeId.CarryStrap));
-            runtimeConfig.energyPerSecondBase *= strap;
-            runtimeConfig.energyPerSecondPerWeight *= strap;
+            // Ausruestung (Geld)
+            RuntimeConfig.catchRadius *= Mathf.Pow(1.12f, LevelOf(UpgradeId.ShoulderPad));
 
-            runtimeConfig.startEnergy += 15f * LevelOf(UpgradeId.Coffee);
+            // Staerke und Ausdauer wirken nicht auf Config-Werte, sondern als
+            // Faktoren im EnergySystem - dort sitzt die Unterscheidung zwischen
+            // Lauf- und Schlepp-Kosten.
+            if (energy != null)
+            {
+                energy.StrengthFactor = Mathf.Pow(0.92f, LevelOf(UpgradeId.Strength));
+                energy.StaminaFactor = Mathf.Pow(0.92f, LevelOf(UpgradeId.Stamina));
+            }
         }
     }
 }

@@ -11,6 +11,42 @@ verworfen wurde.
 
 ---
 
+## 2026-09-21 — Zwei Währungen, neues Energiemodell
+
+**Erfahrung kauft Attribute, Geld kauft Ausrüstung** ([E] von Olli, entspricht
+der Trennung aus GDD 5). Attribute: Energie, Stärke, Ausdauer,
+Laufgeschwindigkeit. Ausrüstung: Cutter anheuern, Schulterpad, Gummistiefel,
+Instant-Kaffee.
+
+**Die beiden Listen überschneiden sich bewusst nicht.** Tempo und
+Energieeffizienz kommen ausschließlich aus dem Körper; Ausrüstung kauft
+Dinge, die der Körper nicht kann (mehr Kollegen, Fangradius, Schutz vor
+Stolperern, Startpolster). Wären beide Währungen für dieselben Effekte gut,
+wäre die Trennung nur Buchhaltung. Deshalb sind die früheren Artikel „Gute
+Stiefel" (Tempo) und „Tragegurt" (Schlepp-Energie) entfallen — die decken
+jetzt Laufgeschwindigkeit und Stärke ab.
+
+**Energiemodell umgebaut [E]:** Vorher kostete nur das Schleppen Energie
+(begründet als „Budget aus Kilogramm mal Weg"). Jetzt kostet alles,
+gestaffelt: Dasein 0,15/s, Laufen +0,6/s, Rennen ×1,8 darauf, Schleppen
++`1,4 + kg/50`. Dadurch ist die Schicht in Echtzeit begrenzt und Umwege
+kosten auch ohne Staude etwas.
+
+**Stärke und Ausdauer greifen an genau diesen beiden Hälften**, nicht an
+Config-Werten: `EnergySystem` hat dafür `StrengthFactor` und
+`StaminaFactor`. Das macht die Wahl zwischen ihnen zu einer Aussage über den
+Spielstil — schwere Stauden wollen Stärke, viel Strecke will Ausdauer.
+
+Gerechnete Schichtlänge (35 % schleppen, 40 % laufen, 10 % rennen, 15 %
+stehen, 43-kg-Staude): 73 s ohne Attribute, 106 s bei Stufe 5, 149 s bei
+Stufe 10; eine 90-kg-Staude drückt auf 60 s. GDD Kapitel 2 nennt 45–90 s pro
+Schicht, das passt, und der Ausbau ist spürbar.
+
+**Gummistiefel = Schutz vor Verletzungen**, umgesetzt als gedämpfter
+Stolperer (Energie und Bremszeit). Ein echtes Verletzungssystem gibt es
+nicht, und ich wollte keines unaufgefordert erfinden — das Stolpern ist die
+nächstliegende vorhandene Entsprechung.
+
 ## 2026-09-21 — Shop gebaut, Balancieren abgeschaltet
 
 **Shop (GDD 5.2)** am Schichtende, bezahlt mit Geld, flache Liste ohne

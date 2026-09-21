@@ -45,6 +45,7 @@ namespace BananaHumper.Gameplay
         public PlayerController player;
         public TrailerController trailer;
         public CameraController cameraController;
+        public UpgradeSystem upgrades;
         public List<Cutter> cutters = new List<Cutter>();
         public PaddockField field;
 
@@ -101,8 +102,16 @@ namespace BananaHumper.Gameplay
             moneyAtShiftStart = economy.Money;
             experienceAtShiftStart = economy.Experience;
             summary = new ShiftSummary();
-            energy.StartShift();
+            // Instant-Kaffee startet ueber dem Maximum (GDD 5.2).
+            energy.StartShift(config.startEnergy + (upgrades != null ? upgrades.StartEnergyBonus : 0f));
             player.ClearBunch();
+
+            // Feldgroesse jede Schicht neu aus der Mannschaft ableiten, damit
+            // ein im Shop angeheuerter Cutter sofort mehr Feld bedeutet (5.2).
+            int hiredCount = cutters.FindAll(c => c != null && c.isHired).Count;
+            float windowWidth = config.paddockBaseWidth + config.paddockWidthPerCutter * hiredCount;
+            field.aheadDistance = windowWidth * 0.65f;
+            field.behindDistance = windowWidth * 0.35f;
 
             // Richtung pro Schicht auswuerfeln: Mal arbeitet sich die Crew nach
             // rechts durch das Feld, mal nach links (GDD 3.5).
@@ -138,6 +147,11 @@ namespace BananaHumper.Gameplay
                 if (cutter != null) cutter.Tick(dt, HumperIsReadyAt(cutter));
             }
             player.Tick(dt);
+
+            // Energie laeuft immer, nicht nur beim Schleppen (GDD 4.2): Dasein
+            // kostet wenig, Laufen mehr, Rennen mehr, Schleppen am meisten.
+            float carriedWeight = player.IsCarrying ? player.CarriedBunch.Weight : 0f;
+            energy.ConsumeTick(player.IsMoving, player.IsRunning, player.IsCarrying, carriedWeight, dt);
 
             if (player.IsCarrying) TickCarrying(dt);
 
@@ -181,7 +195,6 @@ namespace BananaHumper.Gameplay
             {
                 // Balancieren ist abgeschaltet: Die Staude sitzt fest, es
                 // bleiben Gewicht und Weg als Kosten (GDD 3.4).
-                energy.ConsumeCarrying(player.CarriedBunch.Weight, player.IsRunning, dt);
                 player.ApplyCarryPose(0f, 0f);
                 if (trailer.IsInDeliveryRange(player.PositionX)) Deliver();
                 return;
@@ -192,15 +205,8 @@ namespace BananaHumper.Gameplay
                 energy.ApplyRepositionCost();
             }
 
-            if (!balance.IsRepositioning)
-            {
-                balance.Tick(dt, player.IsRunning);
-                energy.ConsumeCarrying(player.CarriedBunch.Weight, player.IsRunning, dt);
-            }
-            else
-            {
-                player.StandStill();
-            }
+            if (!balance.IsRepositioning) balance.Tick(dt, player.IsRunning);
+            else player.StandStill();
 
             player.ApplyCarryPose(balance.Theta, balance.Offset);
 
@@ -293,7 +299,8 @@ namespace BananaHumper.Gameplay
             cameraController?.Shake(0.12f, 0.18f);
             if (!player.IsCarrying) return;
 
-            energy.ApplyStumbleCost();
+            // Gummistiefel daempfen den Stolperer (GDD 5.2).
+            energy.ApplyStumbleCost(upgrades != null ? upgrades.StumbleFactor : 1f);
             if (!config.balancingEnabled) return;
 
             float direction = UnityEngine.Random.value < 0.5f ? -1f : 1f;

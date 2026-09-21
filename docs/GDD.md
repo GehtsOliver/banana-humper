@@ -309,16 +309,35 @@ Kapitel 7 (Matsch, Regen).
 | **Arbeitstage** | Fortschritt zum Visum (0/88) | Farm-Durchlauf | [Demo] |
 | **Sonnenbrand-Punkte** | Prestige-Währung | Dauerhaft | [V1] |
 
-### 4.2 Energie [Demo] **[A]**
-- Start: 100
-- Tragen: `(2 + gewicht / 40)` pro Sekunde (50 kg ≈ 3,25/s)
-- Rennen: ×1,6
-- Leer zurücklaufen: 0,5 pro Sekunde
-- Fallen gelassen: −15, umsetzen: −5
+### 4.2 Energie [Demo] **[E]**
+
+**Alles kostet Energie, gestaffelt nach Anstrengung** — Dasein < Laufen <
+Rennen < Schleppen. Das ersetzt die frühere Regel „nur Schleppen zehrt":
+Auch Herumstehen und Leerlaufen haben jetzt einen Preis, wenn auch einen
+kleinen. Dadurch ist die Schicht in Echtzeit begrenzt, und Umwege kosten
+auch ohne Staude etwas.
+
+| Anteil | pro Sekunde | gesenkt durch |
+|---|---|---|
+| Dasein (immer) | 0,15 | – |
+| Laufen | +0,6 | **Ausdauer** |
+| Rennen statt Laufen | ×1,8 auf den Laufanteil | **Ausdauer** |
+| Schleppen | +`1,4 + gewicht / 50` | **Stärke** |
+
+- Start: 110, plus 15 je Stufe Instant-Kaffee (über dem Maximum, 5.2)
+- Fallen gelassen: −15, umsetzen: −5, Stolpern: −4 (gesenkt durch Gummistiefel)
 - Eine **verpasste** Staude kostet keine Energie — die Strafe ist der entgangene Lohn und die verlorene Zeit (3.8)
-- Laufen ohne Staude kostet nichts; nur Schleppen zehrt. Damit ist Energie faktisch ein Budget an **getragenen Kilogramm mal Weg**: Das ist der Regler, der schwere Stauden zur Abwägung macht
 - Energie leer → Schicht endet sofort (Staude auf der Schulter fällt, ohne Zusatzstrafe)
-- Ziel Tag 1: ca. 4 Trips pro Schicht
+
+**Die beiden Attribute greifen genau dort, wo ihr Name es verspricht:**
+Stärke macht das Schleppen billiger, Ausdauer das Laufen. Wer viel rennt,
+investiert in Ausdauer; wer schwere Stauden holt, in Stärke.
+
+Gerechnete Schichtlänge bei typischer Spielweise (35 % schleppen, 40 %
+laufen, 10 % rennen, 15 % stehen) mit einer 43-kg-Staude: **73 s** ohne
+Attribute, 106 s mit Stärke und Ausdauer auf Stufe 5, 149 s auf Stufe 10.
+Eine 90-kg-Staude drückt auf 60 s. Passt zu den 45–90 s aus Kapitel 2, und
+der Ausbau ist spürbar.
 
 ### 4.3 Stauden [Demo]
 - Gewicht zufällig, Tag 1: 30–60 kg; steigt bis 60–100 kg an Tag 88
@@ -378,26 +397,30 @@ Zwei getrennte Systeme mit zwei Währungen, **kein Skill Tree** **[E]**. Beide s
 | **Körper** | Erfahrung | Der Körper gewöhnt sich durch Arbeit, der Spieler verteilt die Erfahrung selbst | [Demo] |
 | **Shop** | Geld | Ausrüstung und Verpflegung kaufen | [Demo] |
 
-### 5.1 Körper (Erfahrung) — **noch nicht gebaut**
-> Die Stufen unten stammen aus v0.8 und zielen teils auf Werte, die es seit
-> v0.9 nicht mehr gibt (`comfortAngle`, `stressRate`, Schwerpunkt-Markierung).
-> Erfahrung wird bereits verdient und angezeigt, aber noch nicht ausgegeben.
-> Vor dem Bauen anzupassen: sinnvoll wären Energie, Lauf- und Fangwerte
-> analog zum Shop (5.2).
+### 5.1 Körper (Erfahrung)
 
-**Erfahrung verdienen [Demo] [A]:** 1 Erfahrung pro 10 kg abgelieferter Staude. Fallen gelassene Stauden geben 50 % davon für die bis dahin getragene Last. Verpasste Stauden geben nichts — man hat sie nie getragen. So bringt auch eine schlechte Schicht Fortschritt.
+**Gebaut in Stufe A [E]** — flache Liste, geöffnet am Schichtende neben der
+Ausrüstung. Erfahrung kommt aus abgelieferten Stauden (1 pro 10 kg).
 
-| Körper-Stufe | Effekt pro Stufe | Max | Basiskosten | Version |
+| Attribut | Effekt pro Stufe | Max | Basiskosten | Version |
 |---|---|---|---|---|
-| Kraft | damping +10 %, weightFactor −5 %, stressRate −8 % | 10 | 10 Erfahrung | [Demo] |
-| Ausdauer | +20 max. Energie | 10 | 12 Erfahrung | [Demo] |
-| Schultergewöhnung | wobble −10 %, comfortAngle +1° | 8 | 15 Erfahrung | [Demo] |
-| Beine | Laufgeschwindigkeit +8 % | 8 | 18 Erfahrung | [Demo] |
-| Rennen | Schaltet Rennen frei | 1 | 40 Erfahrung | [Demo] |
-| Augenmaß | Schwerpunkt-Markierung beim Auflegen größer und länger sichtbar | 3 | 30 Erfahrung | [V1] **[A]** |
-| Routine | Jede fehlerfreie Abgabe in Folge +3 % Lohn (max. +30 % pro Stufe), Fehler setzt zurück | 3 | 80 Erfahrung | [V1] **[A]** |
-| Dickes Fell | Cutter-Beleidigungen geben +1 $ | 1 | 60 Erfahrung | [V1] **[A]** |
-| Zweite Staude | Zwei Stauden gleichzeitig (zählt doppelt, doppelter Lohn, weightFactor ×1,7) | 1 | 500 Erfahrung | [V1] |
+| **Energie** | +20 maximale Energie | 10 | 12 EP | [Demo] |
+| **Stärke** | Energieverbrauch beim Schleppen −8 % | 10 | 10 EP | [Demo] |
+| **Ausdauer** | Energieverbrauch beim Laufen und Rennen −8 % | 10 | 10 EP | [Demo] |
+| **Laufgeschwindigkeit** | +6 % Tempo | 8 | 18 EP | [Demo] |
+
+Stärke und Ausdauer greifen an den beiden Hälften des Energiemodells (4.2):
+Wer schwere Stauden holt, braucht Stärke; wer viel Strecke macht, Ausdauer.
+Das macht die Wahl zwischen ihnen zu einer Aussage über den eigenen
+Spielstil statt zu einer Rechenaufgabe.
+
+**Später [V1], noch nicht gebaut**
+| Attribut | Effekt pro Stufe | Max | Basiskosten | Version |
+|---|---|---|---|---|
+| Rennen | Schaltet Rennen erst frei | 1 | 40 EP | [V1] |
+| Routine | Jede fehlerfreie Abgabe in Folge +3 % Lohn | 3 | 80 EP | [V1] **[A]** |
+| Dickes Fell | Cutter-Beleidigungen geben +1 $ | 1 | 60 EP | [V1] **[A]** |
+| Zweite Staude | Zwei Stauden gleichzeitig | 1 | 500 EP | [V1] |
 
 ### 5.2 Shop (Geld)
 
@@ -410,9 +433,14 @@ noch zählen.
 |---|---|---|---|---|
 | **Cutter anheuern** | Ein Cutter mehr, das Paddock wächst mit | 4 | 60 $ | [Demo] |
 | **Schulterpad** | Fangradius +12 % | 5 | 40 $ | [Demo] |
-| **Gute Stiefel** | Laufgeschwindigkeit +8 % | 5 | 50 $ | [Demo] |
-| **Tragegurt** | Energieverbrauch beim Schleppen −10 % | 5 | 70 $ | [Demo] |
-| **Instant-Kaffee** | +15 Startenergie | 5 | 45 $ | [Demo] |
+| **Gummistiefel** | Stolpern kostet −30 % Energie und bremst kürzer | 3 | 80 $ | [Demo] |
+| **Instant-Kaffee** | Schichtstart mit +15 Energie über dem Maximum | 3 | 45 $ | [Demo] |
+
+**Ausrüstung überschneidet sich bewusst nicht mit den Attributen (5.1):**
+Tempo und Energieeffizienz kommen aus dem Körper, Ausrüstung kauft Dinge,
+die der Körper nicht kann — mehr Kollegen, größerer Fangradius, Schutz vor
+Stolperern, ein Startpolster über dem Maximum. Sonst wären die beiden
+Währungen austauschbar und die Trennung sinnlos.
 
 Kosten nach 4.5 (`basis * 1,6^stufe`). Der erste Cutter kostet damit rund
 ein bis zwei Schichten Verdienst, ein voll ausgebauter Artikel ein

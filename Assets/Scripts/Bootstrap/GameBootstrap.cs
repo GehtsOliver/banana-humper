@@ -66,8 +66,9 @@ namespace BananaHumper.Bootstrap
             var systemsRoot = new GameObject("Systems");
             // Upgrades zuerst: Sie liefern die Laufzeit-Config, mit der alle
             // anderen Systeme rechnen - das Asset selbst bleibt unangetastet.
+            var energy = systemsRoot.AddComponent<EnergySystem>();
             var upgrades = systemsRoot.AddComponent<UpgradeSystem>();
-            upgrades.Initialize(balanceConfig, cutters);
+            upgrades.Initialize(balanceConfig, energy, cutters);
             var runtimeConfig = upgrades.RuntimeConfig;
 
             int hiredCount = cutters.FindAll(c => c != null && c.isHired).Count;
@@ -92,7 +93,6 @@ namespace BananaHumper.Bootstrap
             }
 
             var balance = systemsRoot.AddComponent<BalanceController>();
-            var energy = systemsRoot.AddComponent<EnergySystem>();
             var economy = systemsRoot.AddComponent<EconomySystem>();
             var shift = systemsRoot.AddComponent<ShiftController>();
             var hud = systemsRoot.AddComponent<HUDController>();
@@ -108,6 +108,7 @@ namespace BananaHumper.Bootstrap
             shift.player = player;
             shift.trailer = trailer;
             shift.cameraController = cameraController;
+            shift.upgrades = upgrades;
             shift.cutters = new List<Cutter>(cutters);
             shift.field = field;
             shift.Initialize();

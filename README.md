@@ -102,21 +102,46 @@ steckt weiter im Code und lässt sich über `Balancing Enabled` in der
 `BalanceConfig` wieder einschalten (siehe
 [docs/DECISIONS.md](docs/DECISIONS.md)).
 
-## Shop
+## Fortschritt
 
-Öffnet sich am Schichtende neben der Bilanz, bezahlt wird mit Geld:
+Am Schichtende öffnet sich der Feierabend-Bildschirm mit zwei Spalten – zwei
+Währungen, die sich bewusst nicht überschneiden:
+
+**Körper (Erfahrung, aus abgelieferten Stauden)**
+
+| Attribut | Effekt pro Stufe | Max | ab |
+|---|---|---|---|
+| Energie | +20 maximale Energie | 10 | 12 EP |
+| Stärke | Energie beim Schleppen −8 % | 10 | 10 EP |
+| Ausdauer | Energie beim Laufen/Rennen −8 % | 10 | 10 EP |
+| Laufgeschwindigkeit | +6 % Tempo | 8 | 18 EP |
+
+**Ausrüstung (Geld)**
 
 | Artikel | Effekt pro Stufe | Max | ab |
 |---|---|---|---|
-| Cutter anheuern | Ein Cutter mehr, das Paddock wächst mit | 4 | 60 $ |
+| Cutter anheuern | Ein Cutter mehr, das Feld wächst mit | 4 | 60 $ |
 | Schulterpad | Fangradius +12 % | 5 | 40 $ |
-| Gute Stiefel | Laufgeschwindigkeit +8 % | 5 | 50 $ |
-| Tragegurt | Energieverbrauch beim Schleppen −10 % | 5 | 70 $ |
-| Instant-Kaffee | +15 Startenergie | 5 | 45 $ |
+| Gummistiefel | Stolpern kostet −30 % Energie, bremst kürzer | 3 | 80 $ |
+| Instant-Kaffee | Start mit +15 Energie über dem Maximum | 3 | 45 $ |
 
 Preise steigen je Stufe um Faktor 1,6 (GDD 4.5). Käufe verändern **nicht**
 das `BalanceConfig`-Asset, sondern eine Laufzeitkopie – sonst würde ein Kauf
 im Editor die Datei dauerhaft ändern.
+
+## Energie
+
+Alles kostet Energie, gestaffelt nach Anstrengung:
+
+| Anteil | pro Sekunde | gesenkt durch |
+|---|---|---|
+| Dasein (immer) | 0,15 | – |
+| Laufen | +0,6 | Ausdauer |
+| Rennen | ×1,8 auf den Laufanteil | Ausdauer |
+| Schleppen | +`1,4 + kg/50` | Stärke |
+
+Eine Schicht hält damit am Tag 1 rund 73 Sekunden, mit ausgebauten
+Attributen bis etwa 150.
 
 ## Code-Struktur
 
