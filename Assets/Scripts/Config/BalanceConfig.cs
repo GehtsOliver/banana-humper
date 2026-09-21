@@ -28,9 +28,12 @@ namespace BananaHumper.Config
         public float regrowSeconds = 6f;
 
         [Header("Pflanzen (3.2)")]
-        [Tooltip("Abstand zwischen zwei Pflanzen im Paddock - bestimmt, wie dicht das Feld steht.")]
-        public float plantSpacingMin = 2.2f;
-        public float plantSpacingMax = 4.0f;
+        // Abstand zwischen zwei Pflanzen. Zu dicht hat zwei Nachteile: Das Feld
+        // wirkt zugewuchert, und zwischen die Pflanzen passt kein Stein mehr
+        // (siehe rockMinDistance) - bei Abstand 3.5 liegt die Mitte einer
+        // Luecke 1.75 von beiden Pflanzen weg und damit knapp ausserhalb.
+        public float plantSpacingMin = 3.5f;
+        public float plantSpacingMax = 6.0f;
 
         [Header("Paddock-Groesse")]
         [Tooltip("Grundbreite der Reihe plus Zuschlag je angeheuertem Cutter - das Feld waechst mit der Mannschaft.")]
@@ -103,8 +106,12 @@ namespace BananaHumper.Config
         [Tooltip("Wie viele Steine pro Schicht zufaellig in der Reihe liegen.")]
         public int rockCountMin = 2;
         public int rockCountMax = 3;
-        [Tooltip("Mindestabstand eines Steins zu einer Station und zu anderen Steinen.")]
-        public float rockMinDistance = 2.2f;
+        // Mindestabstand eines Steins zu einer Pflanze. Muss kleiner sein als
+        // der halbe kleinste Pflanzenabstand, sonst findet sich nie eine
+        // gueltige Stelle und es entstehen gar keine Steine. 1.6 haelt den
+        // Stein zugleich ausserhalb des Fangradius (1.0), damit er das Fangen
+        // nicht unfair macht.
+        public float rockMinDistance = 1.6f;
         // 7.0 bei jumpGravity 20 ergibt 1,22 m Sprunghoehe und 0,7 s Flugzeit.
         // Ueber dem hoechsten Stein (0,6 m) ist man davon rund 0,5 s, im Gehen
         // also etwa 1,0 m Strecke - genug Puffer fuer einen 0,76 m breiten

@@ -231,7 +231,7 @@ Simulation pro Frame (wie v0.8, ohne Belastungs-Teil):
 | Parameter | Startwert | Bemerkung |
 |---|---|---|
 | Cutter | 2 angeheuert, 6 Plätze | weitere über den Shop (5.2) |
-| Pflanzenabstand | 2,2–4,0 m, zufällig | kein Raster |
+| Pflanzenabstand | 3,5–6,0 m, zufällig | kein Raster; muss Platz für Steine lassen (3.9) |
 | Cutter-Lauftempo | 1,2 m/s | langsamer als der Humper |
 | Nachwachsen | 6 s | schiebt die Cutter weiter ins Feld |
 | Paddock-Breite | wächst mit der Mannschaft | endet 3 m hinter dem letzten Cutter |
@@ -253,7 +253,7 @@ Simulation pro Frame (wie v0.8, ohne Belastungs-Teil):
 | Laufgeschwindigkeit | 2,0 m/s | Körper „Beine“ |
 | Rennen | ×1,6 | |
 | Sprunggeschwindigkeit / Schwerkraft | 7,0 / 20 | ergibt 1,22 m hoch, 0,7 s Flugzeit (3.9) |
-| Steine je Schicht | 2–3, zufällig platziert | Höhe 0,40–0,60 m, Mindestabstand 2,2 m zu Stationen (3.9) |
+| Steine | alle 6–11 m mit 50 % Chance | Mindestabstand 1,6 m zu Pflanzen, also außerhalb des Fangradius (3.9) |
 | Stolpern | 0,45 s bei 35 % Tempo, −4 Energie | nur mit Staude auch Wackel-Impuls |
 | Startenergie | 110 | ≈ 35 s reine Tragezeit bei Tag-1-Gewicht (4.2) |
 

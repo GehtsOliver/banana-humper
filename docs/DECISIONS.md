@@ -11,6 +11,38 @@ verworfen wurde.
 
 ---
 
+## 2026-09-21 — Zwei Feld-Bugs: wucherndes Paddock, nie ein Stein
+
+Beide aus dem Umbau auf `PaddockField` und beide mit derselben Ursache-Art —
+eine Annahme, die beim Schreiben plausibel wirkte und in der Praxis nie
+zutraf.
+
+**Pflanzen häuften sich Schicht um Schicht.** `Initialize` legt bei jedem
+Schichtstart neue Wurzelobjekte an, räumte aber die Pflanzen der Vorschicht
+nicht ab — die blieben in der Liste und in der Szene stehen. Jetzt räumt
+`ClearField()` zuerst auf.
+
+**Es konnte nie ein Stein entstehen.** `rockMinDistance` verlangte 2,2
+Abstand zu *jeder* Pflanze, während Pflanzen nur 2,2–4,0 auseinanderstanden.
+Die Mitte einer Lücke liegt damit höchstens 2,0 von der nächsten Pflanze
+weg — die Bedingung war mathematisch unerfüllbar. Konsequenz: Der Abstand
+muss kleiner sein als der halbe kleinste Pflanzenabstand. Jetzt 1,6 bei
+Pflanzenabstand 3,5–6,0, und der Stein-Spawn sucht zusätzlich in der
+Umgebung nach einer freien Lücke, statt bei der ersten Kollision aufzugeben.
+
+**Daraus als Regel:** Wenn zwei Streuparameter gegeneinander arbeiten
+(Dichte des einen begrenzt den Platz des anderen), gehört die Beziehung als
+Kommentar an beide Werte — sonst kippt eine Änderung an einem still das
+andere Feature.
+
+Gegengerechnet nach dem Fix: 22-m-Fenster mit 2 Cuttern enthält 4–5 Pflanzen
+und 2–3 Steine, 42-m-Fenster mit 6 Cuttern 8–10 Pflanzen. Steine werden jetzt
+in 100 % der Versuche platziert statt in 0 %.
+
+Nebenbei behoben: Bei einer Schicht nach links begann die Aussaat auf der
+falschen Seite des Trailers (`startX - behindDistance` statt
+richtungsabhängig).
+
 ## 2026-09-21 — Zwei Währungen, neues Energiemodell
 
 **Erfahrung kauft Attribute, Geld kauft Ausrüstung** ([E] von Olli, entspricht

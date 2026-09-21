@@ -44,16 +44,39 @@ namespace BananaHumper.Gameplay
             this.day = day;
             this.direction = direction >= 0 ? 1 : -1;
 
+            // Altes Feld komplett abraeumen: Initialize laeuft bei jeder Schicht,
+            // und ohne das blieben die Pflanzen der Vorschicht stehen und das
+            // Feld wuerde sich Schicht um Schicht zuwuchern.
+            ClearField();
+
             plantsRoot = new GameObject("Plants").transform;
             plantsRoot.SetParent(transform, false);
             rocksRoot = new GameObject("Rocks").transform;
             rocksRoot.SetParent(transform, false);
 
-            // Pflanzen und Steine starten hinter dem Trailer, damit der erste
-            // Abschnitt schon voll bewachsen ist und nicht erst zuwaechst.
-            nextPlantX = startX - behindDistance;
-            nextRockX = startX - behindDistance;
+            // Hinter dem Trailer anfangen, damit der erste Abschnitt schon
+            // bewachsen ist. "Hinten" haengt an der Laufrichtung - bei einer
+            // Schicht nach links liegt es rechts vom Trailer.
+            nextPlantX = startX - direction * behindDistance;
+            nextRockX = nextPlantX;
             UpdateWindow(startX);
+        }
+
+        void ClearField()
+        {
+            foreach (var plant in Plants)
+            {
+                if (plant != null) Destroy(plant.gameObject);
+            }
+            foreach (var rock in Obstacles)
+            {
+                if (rock != null) Destroy(rock.gameObject);
+            }
+            Plants.Clear();
+            Obstacles.Clear();
+
+            if (plantsRoot != null) Destroy(plantsRoot.gameObject);
+            if (rocksRoot != null) Destroy(rocksRoot.gameObject);
         }
 
         /// <summary>Fenster um <paramref name="centerX"/> nachziehen: vorne saeen, hinten aufraeumen.</summary>
@@ -131,11 +154,10 @@ namespace BananaHumper.Gameplay
         void SpawnRock(float x)
         {
             // Nicht direkt unter eine Pflanze, sonst liegt ein Stein in der
-            // Fallstelle und macht das Fangen unfair.
-            foreach (var plant in Plants)
-            {
-                if (plant != null && Mathf.Abs(plant.PositionX - x) < config.rockMinDistance) return;
-            }
+            // Fallstelle und macht das Fangen unfair. Die Wunschstelle liegt oft
+            // zu nah dran, deshalb ein Stueck in beide Richtungen nach einer
+            // Luecke suchen, statt den Stein einfach ausfallen zu lassen.
+            if (!TryFindGap(ref x)) return;
 
             var go = new GameObject($"Rock{rockCounter++}");
             go.transform.SetParent(rocksRoot, false);
@@ -147,6 +169,32 @@ namespace BananaHumper.Gameplay
             PaddockVisuals.BuildRock(obstacle);
 
             Obstacles.Add(obstacle);
+        }
+
+        /// <summary>Sucht ab <paramref name="x"/> die naechste Stelle mit genug Abstand zu allen Pflanzen.</summary>
+        bool TryFindGap(ref float x)
+        {
+            const float Step = 0.4f;
+            for (int i = 0; i < 12; i++)
+            {
+                foreach (int side in new[] { 1, -1 })
+                {
+                    float candidate = x + side * Step * i;
+                    if (!IsClearOfPlants(candidate)) continue;
+                    x = candidate;
+                    return true;
+                }
+            }
+            return false;
+        }
+
+        bool IsClearOfPlants(float x)
+        {
+            foreach (var plant in Plants)
+            {
+                if (plant != null && Mathf.Abs(plant.PositionX - x) < config.rockMinDistance) return false;
+            }
+            return true;
         }
 
         /// <summary>Wie viele reife Stauden noch im aktuellen Abschnitt haengen (GDD 3.5).</summary>
