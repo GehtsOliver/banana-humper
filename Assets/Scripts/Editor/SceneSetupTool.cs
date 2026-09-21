@@ -33,6 +33,19 @@ namespace BananaHumper.EditorTools
         /// <summary>Startaufstellung der Stationen (GDD 3.2: 4 Stueck, unterschiedlich weit auseinander).</summary>
         static readonly float[] StationX = { -2.5f, 1.5f, 5.5f, 10f };
 
+        /// <summary>
+        /// Steine (GDD 3.9), bewusst zwischen den Stationen statt darauf: Sie
+        /// sollen die Laufwege stoeren, nicht das Fangen unmoeglich machen.
+        /// Unterschiedliche Groessen, damit nicht jeder Sprung gleich aussieht.
+        /// </summary>
+        static readonly (float x, float halfWidth, float clearHeight)[] Rocks =
+        {
+            (-0.6f, 0.30f, 0.45f),
+            (3.4f, 0.38f, 0.60f),
+            (7.9f, 0.28f, 0.40f),
+            (11.6f, 0.34f, 0.55f),
+        };
+
         [MenuItem("BananaHumper/Bootstrap-Szene erzeugen")]
         public static void CreateMainScene()
         {
@@ -67,11 +80,19 @@ namespace BananaHumper.EditorTools
                 stations.Add(CreateStation(stationsRoot, i, StationX[i]));
             }
 
+            var obstaclesRoot = new GameObject("Obstacles").transform;
+            var obstacles = new List<Obstacle>();
+            for (int i = 0; i < Rocks.Length; i++)
+            {
+                obstacles.Add(CreateRock(obstaclesRoot, i, Rocks[i]));
+            }
+
             var bootstrapGo = new GameObject("GameBootstrap");
             var bootstrap = bootstrapGo.AddComponent<GameBootstrap>();
             bootstrap.player = player;
             bootstrap.trailer = trailer;
             bootstrap.stations = stations;
+            bootstrap.obstacles = obstacles;
             bootstrap.rowMinX = RowMinX;
             bootstrap.rowMaxX = RowMaxX;
 
@@ -118,6 +139,23 @@ namespace BananaHumper.EditorTools
             station.bunchAnchor = bunchAnchor;
             station.bar = bar;
             return station;
+        }
+
+        /// <summary>
+        /// Ein Stein als verschiebbares Szenen-Objekt. Die Form baut
+        /// GameBootstrap zur Laufzeit aus halfWidth/clearHeight - was man sieht,
+        /// ist damit genau das, woran man haengenbleibt.
+        /// </summary>
+        static Obstacle CreateRock(Transform parent, int index, (float x, float halfWidth, float clearHeight) spec)
+        {
+            var go = new GameObject($"Rock{index}");
+            go.transform.SetParent(parent, false);
+            go.transform.position = new Vector3(spec.x, GameBootstrap.GroundY, 0f);
+
+            var obstacle = go.AddComponent<Obstacle>();
+            obstacle.halfWidth = spec.halfWidth;
+            obstacle.clearHeight = spec.clearHeight;
+            return obstacle;
         }
 
         static TrailerController CreateTrailer()

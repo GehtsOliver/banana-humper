@@ -14,15 +14,6 @@ namespace BananaHumper.Gameplay
         public float Current { get; private set; }
         public float Max { get; private set; }
 
-        /// <summary>
-        /// TEMPORAER fuers Testen (Nutzerwunsch): Energie faellt nie auf 0, die
-        /// Schicht endet also nie automatisch, damit Trips beliebig oft
-        /// wiederholt werden koennen. Vor einem echten Balance-/Graybox-Test
-        /// (GDD Kapitel 12) wieder auf false setzen bzw. GameBootstrap-Zeile
-        /// entfernen.
-        /// </summary>
-        public bool InfiniteEnergy;
-
         bool depletedFired;
 
         public void StartShift(float maxOverride = -1f)
@@ -44,10 +35,11 @@ namespace BananaHumper.Gameplay
         // Stauden zur Abwaegung statt zur automatisch besseren Wahl.
         public void ApplyDropPenalty() => Spend(config.dropEnergyPenalty);
         public void ApplyRepositionCost() => Spend(config.repositionEnergyCost);
+        public void ApplyStumbleCost() => Spend(config.stumbleEnergyCost);
 
         void Spend(float amount)
         {
-            if (InfiniteEnergy || amount <= 0f) return;
+            if (amount <= 0f) return;
             Current = Mathf.Max(0f, Current - amount);
             if (Current <= 0f && !depletedFired)
             {
@@ -56,6 +48,6 @@ namespace BananaHumper.Gameplay
             }
         }
 
-        public bool IsDepleted => !InfiniteEnergy && Current <= 0f;
+        public bool IsDepleted => Current <= 0f;
     }
 }

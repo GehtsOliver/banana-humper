@@ -104,7 +104,7 @@ Jedes Feature muss mindestens eine davon stärken, sonst fliegt es raus.
 | Genre | Rein aktives Incremental Game mit Timing- und Routen-Kern und Prestige, ohne Idle-Anteil **[E]** |
 | Plattform | Steam (Windows) mit früher Steam-Seite und Steam-Demo; Web-Builds für private Tests und Webportale (Kapitel 16) **[E]** |
 | Engine | Unity 6 **[E]** |
-| Input | `A`/`D` (Laufen), `Shift` (Rennen), Maustasten (Ausgleichen beim Schleppen), `E` (Umsetzen) **[E]** |
+| Input | `A`/`D` (Laufen), `Shift` (Rennen), `Leertaste` (Springen), Maustasten (Ausgleichen beim Schleppen), `E` (Umsetzen) **[E]** |
 | Sprache | Englisch zum Release **[A]**, Deutsch [V2] **[A]** |
 | Monetarisierung | Steam Premium (Einmalkauf), keine Ads, keine In-App-Käufe **[E]** |
 | Preis Vollversion | 3–5 € **[A]** |
@@ -226,6 +226,10 @@ Simulation pro Frame (wie v0.8, ohne Belastungs-Teil):
 | wobble Gehen / Rennen | 0,4 / 1,0 | niedriger als v0.8 |
 | Laufgeschwindigkeit | 2,0 m/s | Körper „Beine“ |
 | Rennen | ×1,6 | |
+| Sprunggeschwindigkeit / Schwerkraft | 7,0 / 20 | ergibt 1,22 m hoch, 0,7 s Flugzeit (3.9) |
+| Steine je Reihe | 4 | Höhe 0,40–0,60 m, in der Szene platzierbar (3.9) |
+| Stolpern | 0,45 s bei 35 % Tempo, −4 Energie | nur mit Staude auch Wackel-Impuls |
+| Startenergie | 110 | ≈ 35 s reine Tragezeit bei Tag-1-Gewicht (4.2) |
 
 Alle Werte sind Schätzungen für den ersten Graybox-Test, nicht gespielt.
 
@@ -244,6 +248,26 @@ Alle Werte sind Schätzungen für den ersten Graybox-Test, nicht gespielt.
 | Verwarnung | zählt als Fehler (4.7) | zählt als Fehler (4.7) |
 | Juice | Dumpfer Aufprall, Matsch-Partikel, Bananen purzeln | Kamerawackeln, Aufprall, Zeitlupe 0,2 s |
 | Reaktion | Cutter-Spruch | Cutter-Spruch |
+
+### 3.9 Hindernisse und Springen [Demo] **[E]**
+Der Weg zwischen den Stationen soll nicht nur Strecke sein. In der Reihe
+liegen **Steine**, über die mit `Leertaste` gesprungen werden muss.
+
+- Die Steine liegen fest in der Szene (Level-Design), nicht zufällig pro
+  Schicht — die Strecke soll lernbar sein.
+- **Ohne Staude:** Dagegenlaufen kostet nur Tempo, man stolpert kurz.
+- **Mit Staude:** zusätzlich ein kräftiger Wackel-Impuls auf die Staude und
+  −4 Energie. Erst dadurch lohnt sich das Springen wirklich.
+- Bewusst **keine Blockade**: Man stolpert hindurch statt vor einer
+  unsichtbaren Wand zu stehen. Passt zu Design-Säule „Scheitern ist lustig“
+  (1.6) und hält den Fluss aufrecht.
+- Die Steine sind unterschiedlich hoch und breit, damit nicht jeder Sprung
+  gleich aussieht.
+
+**Warum das zum Kern passt:** Mit Staude ist Rennen ohnehin riskant; Steine
+machen die Frage „renne ich oder gehe ich?“ auf dem Rückweg und auf dem
+Schleppweg unterschiedlich teuer. Später sind sie der Ort für Ereignisse aus
+Kapitel 7 (Matsch, Regen).
 
 ---
 

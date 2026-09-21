@@ -57,6 +57,7 @@ namespace BananaHumper.Gameplay
         public event Action<CatchQuality> OnCaught;
         public event Action OnBunchMissed;
         public event Action OnBunchDropped;
+        public event Action OnStumbled;
         public event Action<ShiftSummary> OnShiftEnded;
 
         readonly List<FallingBunch> inFlight = new List<FallingBunch>();
@@ -73,6 +74,7 @@ namespace BananaHumper.Gameplay
         public void Initialize()
         {
             balance.OnDropped += HandleDropped;
+            player.OnStumbled += HandleStumbled;
             foreach (var station in stations)
             {
                 if (station != null) station.OnCut += HandleStationCut;
@@ -82,6 +84,7 @@ namespace BananaHumper.Gameplay
         void OnDestroy()
         {
             if (balance != null) balance.OnDropped -= HandleDropped;
+            if (player != null) player.OnStumbled -= HandleStumbled;
             foreach (var station in stations)
             {
                 if (station != null) station.OnCut -= HandleStationCut;
@@ -159,8 +162,9 @@ namespace BananaHumper.Gameplay
 
         void HandleStationCut(CutterStation station, BunchData bunch, Vector3 dropPosition)
         {
-            float shoulderY = player.transform.position.y;
-            var falling = FallingBunch.Spawn(bunch, dropPosition, shoulderY, config.fallSeconds, player.shoulderBunch);
+            // Bewusst die Bodenhoehe, nicht die aktuelle Spielerhoehe: Sonst
+            // wuerde ein Sprung im falschen Moment die Fallstrecke verkuerzen.
+            var falling = FallingBunch.Spawn(bunch, dropPosition, player.GroundY, config.fallSeconds, player.shoulderBunch);
             falling.OnImpact += HandleImpact;
             inFlight.Add(falling);
         }
@@ -219,6 +223,21 @@ namespace BananaHumper.Gameplay
             int payout = economy.RegisterDelivery(bunch, carriedPayoutFactor);
             summary.BunchesDelivered++;
             OnDelivered?.Invoke(payout);
+        }
+
+        /// <summary>
+        /// Gegen einen Stein gelaufen (GDD 3.9). Ohne Staude kostet es nur
+        /// Tempo; mit Staude wackelt sie kraeftig und es kostet Kraft - genau
+        /// dann lohnt sich also das Springen.
+        /// </summary>
+        void HandleStumbled()
+        {
+            OnStumbled?.Invoke();
+            if (!player.IsCarrying) return;
+
+            energy.ApplyStumbleCost();
+            float direction = UnityEngine.Random.value < 0.5f ? -1f : 1f;
+            balance.ApplyImpulse(direction * config.stumbleWobbleImpulse);
         }
 
         void HandleDropped()

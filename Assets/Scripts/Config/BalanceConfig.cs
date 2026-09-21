@@ -66,8 +66,26 @@ namespace BananaHumper.Config
         public float walkSpeed = 2.0f;
         public float runSpeedMultiplier = 1.6f;
 
+        [Header("Springen und Hindernisse (3.9)")]
+        // 7.0 bei jumpGravity 20 ergibt 1,22 m Sprunghoehe und 0,7 s Flugzeit.
+        // Ueber dem hoechsten Stein (0,6 m) ist man davon rund 0,5 s, im Gehen
+        // also etwa 1,0 m Strecke - genug Puffer fuer einen 0,76 m breiten
+        // Stein. Mit 6.5 war das Fenster fast genau so breit wie der Stein.
+        public float jumpVelocity = 7.0f;
+        public float jumpGravity = 20f;
+        [Tooltip("Wie lange man nach einem Stolperer gebremst ist.")]
+        public float stumbleSeconds = 0.45f;
+        [Range(0f, 1f)] public float stumbleSpeedFactor = 0.35f;
+        public float stumbleEnergyCost = 4f;
+        [Tooltip("Wackel-Impuls auf die getragene Staude beim Stolpern.")]
+        public float stumbleWobbleImpulse = 1.6f;
+
         [Header("Energie (4.2)")]
-        public float startEnergy = 100f;
+        // 110 zielt auf ~35 s reine Tragezeit: Eine Tag-1-Staude (Ø 43 kg)
+        // kostet 2.0 + 43/40 = 3.08 pro Sekunde, macht 110 / 3.08 ≈ 36 s.
+        // Laufen ohne Staude kostet nichts, die Schicht dauert in Echtzeit
+        // also laenger - das Budget zaehlt getragene Kilogramm mal Weg.
+        public float startEnergy = 110f;
         // Laufen ohne Staude kostet nichts (4.2): Energie ist ein Budget aus
         // getragenen Kilogramm mal Weg, das macht schwere Stauden zur Abwaegung.
         public float energyPerSecondBase = 2.0f;

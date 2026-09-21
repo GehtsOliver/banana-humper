@@ -44,6 +44,7 @@ namespace BananaHumper.UI
             shift.OnCaught += ShowCatchFeedback;
             shift.OnBunchMissed += () => FlashCatchText("Verpasst!", new Color(0.95f, 0.3f, 0.25f));
             shift.OnBunchDropped += () => FlashCatchText("Fallen gelassen!", new Color(0.95f, 0.3f, 0.25f));
+            shift.OnStumbled += () => FlashCatchText("Stein! Spring drueber (Leertaste)", new Color(0.95f, 0.75f, 0.2f));
             shift.OnShiftEnded += ShowSummary;
         }
 

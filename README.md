@@ -61,6 +61,7 @@ Laufzeit.
 | Objekt | Bedeutung |
 |---|---|
 | `Stations/Station0..3` | **Das Level-Design:** Die Abstände zwischen den Stationen bestimmen, wie weit man laufen muss – der wichtigste Tuning-Hebel des Kern-Loops |
+| `Obstacles/Rock0..3` | Steine zum Überspringen. Höhe und Breite stehen im `Obstacle`-Inspector; die sichtbare Form richtet sich danach |
 | `Player` | Startposition der Spielfigur |
 | `Player > BunchVisual` | Auflagepunkt der Staude auf der Schulter |
 | `Trailer` | Startposition des Trailers (fährt zur Laufzeit die Reihe entlang) |
@@ -84,6 +85,9 @@ sieht das Ergebnis nur erst beim Drücken von Play.
 - **Laufen:** `A`/`D` durch die Reihe.
 - **Rennen:** `Shift` halten (schneller, mehr Wackeln, mehr Energie – aber
   nur mit Staude kostet Laufen überhaupt Energie).
+- **Springen:** `Leertaste`. In der Reihe liegen vier Steine; dagegenlaufen
+  kostet Tempo, und mit Staude zusätzlich Energie und einen kräftigen
+  Wackler.
 - **Fangen:** rechtzeitig unter der fallenden Staude stehen. Je mittiger,
   desto besser: perfekt = kein Versatz, Streifer = −25 % Lohn und starker
   Versatz.
@@ -105,6 +109,7 @@ sieht das Ergebnis nur erst beim Drücken von Play.
 | `Gameplay/FallingBunch.cs` | 3.3 | Fallende Staude, meldet den Aufprall |
 | `Gameplay/PlayerController.cs` | 3.1 | Freie Bewegung in der Reihe, Tragezustand |
 | `Gameplay/TrailerController.cs` | 3.5 | Mitfahrender Trailer, Ablieferung |
+| `Gameplay/Obstacle.cs` | 3.9 | Stein in der Reihe, Treffer- und Höhenprüfung |
 | `Gameplay/BalanceController.cs` | 3.4 | Pendel-Simulation beim Schleppen, Umsetzen |
 | `Gameplay/EnergySystem.cs` | 4.2 | Energieverbrauch und Schichtende |
 | `Gameplay/EconomySystem.cs` | 4.1, 4.3, 5.1 | Lohn und Erfahrung |

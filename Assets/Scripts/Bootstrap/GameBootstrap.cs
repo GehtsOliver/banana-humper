@@ -42,6 +42,8 @@ namespace BananaHumper.Bootstrap
         public TrailerController trailer;
         [Tooltip("Cutter-Stationen. Ihre Abstaende sind das Level-Design des Kern-Loops (GDD 3.2).")]
         public List<CutterStation> stations = new List<CutterStation>();
+        [Tooltip("Steine, ueber die gesprungen werden muss (GDD 3.9).")]
+        public List<Obstacle> obstacles = new List<Obstacle>();
 
         [Header("Grenzen der Reihe")]
         public float rowMinX = -4f;
@@ -62,10 +64,15 @@ namespace BananaHumper.Bootstrap
             {
                 BuildCutterFigure(station.transform);
             }
+            foreach (var obstacle in obstacles)
+            {
+                if (obstacle != null) BuildRockShape(obstacle);
+            }
 
             player.config = balanceConfig;
             player.minX = rowMinX;
             player.maxX = rowMaxX;
+            player.obstacles = new List<Obstacle>(obstacles);
             player.ClearBunch();
 
             trailer.config = balanceConfig;
@@ -81,10 +88,6 @@ namespace BananaHumper.Bootstrap
 
             balance.config = balanceConfig;
             energy.config = balanceConfig;
-            // TEMPORAER (Nutzerwunsch): Schicht endet nie, damit sich der Loop
-            // beim Testen beliebig lange spielen laesst. Vor einem echten
-            // Graybox-Test (GDD Kapitel 12) diese Zeile entfernen.
-            energy.InfiniteEnergy = true;
             economy.config = balanceConfig;
 
             shift.config = balanceConfig;
@@ -160,6 +163,29 @@ namespace BananaHumper.Bootstrap
             machete.localPosition = new Vector3(0.42f, 1.05f, 0f);
             machete.localRotation = Quaternion.Euler(0f, 0f, -35f);
             SpriteFactory.CreateRoundedQuad("Blade", blade, new Vector2(0.1f, 0.65f), 0.5f, machete, Vector3.zero, 2);
+        }
+
+        /// <summary>
+        /// Prozeduraler Stein (GDD 3.9). Die Form richtet sich nach den Werten
+        /// der Obstacle-Komponente, damit das, was man sieht, auch das ist,
+        /// woran man haengenbleibt.
+        /// </summary>
+        void BuildRockShape(Obstacle obstacle)
+        {
+            var stoneColor = new Color(0.45f, 0.44f, 0.42f);
+            var shadeColor = new Color(0.33f, 0.32f, 0.31f);
+
+            var shape = new GameObject("RockShape").transform;
+            shape.SetParent(obstacle.transform, false);
+
+            float width = obstacle.halfWidth * 2f;
+            float height = obstacle.clearHeight;
+            // Genau 0..clearHeight hoch: Der sichtbare Stein ist damit exakt das,
+            // was man ueberspringen muss - keine unsichtbaren Raender.
+            SpriteFactory.CreateEllipse("Stone", stoneColor, new Vector2(width, height),
+                shape, new Vector3(0f, height * 0.5f, 0f), 1);
+            SpriteFactory.CreateEllipse("Shade", shadeColor, new Vector2(width * 0.45f, height * 0.35f),
+                shape, new Vector3(-width * 0.14f, height * 0.6f, 0f), 2);
         }
 
         /// <summary>Prozeduraler Trailer (rundes Vektor-Composite), unter dem Szenen-Anker.</summary>
