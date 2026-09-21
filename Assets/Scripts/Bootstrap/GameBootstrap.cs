@@ -28,6 +28,11 @@ namespace BananaHumper.Bootstrap
         [Tooltip("Optional: eigene BalanceConfig-Asset zuweisen. Leer = Default-Werte aus Kapitel 3.6.")]
         public BalanceConfig balanceConfig;
 
+        [Header("Layout")]
+        [Tooltip("Position der Staude relativ zum Spieler (Schulter). Die Szene enthaelt nur dieses " +
+                 "Bootstrap-Objekt, deshalb ist die Position hier statt im Hierarchy-Fenster einstellbar.")]
+        public Vector2 bunchShoulderOffset = new Vector2(0f, 0.6f);
+
         const float GroundY = -1.5f;
         const float PlayerY = 0f;
         const float PlayerBodyHeight = 1.6f;
@@ -73,7 +78,7 @@ namespace BananaHumper.Bootstrap
 
             var bunchGo = new GameObject("BunchVisual");
             bunchGo.transform.SetParent(playerRoot, false);
-            bunchGo.transform.localPosition = new Vector3(0f, 0.6f, 0f);
+            bunchGo.transform.localPosition = new Vector3(bunchShoulderOffset.x, bunchShoulderOffset.y, 0f);
             var bunchVisualController = bunchGo.AddComponent<BananaBunchVisual>();
             bunchVisualController.Build(BunchLength.Medium);
 

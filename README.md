@@ -48,6 +48,25 @@ Falls die Szene fehlt oder neu erzeugt werden muss: leeres GameObject
 anlegen, `GameBootstrap`-Komponente draufziehen, oder das Menü
 `BananaHumper > Bootstrap-Szene erzeugen` verwenden.
 
+### Positionen anpassen
+
+Weil alle Objekte erst zur Laufzeit entstehen, steht im Hierarchy-Fenster
+im Edit-Modus nur `GameBootstrap` - es gibt dort nichts zu verschieben.
+Zwei Wege:
+
+1. **Ausprobieren im Play-Modus:** Play drücken, dann füllt sich die
+   Hierarchy mit den erzeugten Objekten (`Player > BunchVisual` usw.). Dort
+   lässt sich alles wie gewohnt verschieben, **die Änderung geht beim
+   Verlassen des Play-Modus aber verloren** - also die gefundenen Werte
+   ablesen und notieren.
+2. **Dauerhaft setzen:** den abgelesenen Wert im `GameBootstrap`-Inspector
+   eintragen (z. B. `Bunch Shoulder Offset` für die Staude). Diese Felder
+   werden in der Szene gespeichert und beim nächsten Play-Start verwendet.
+
+Ist eine Position noch nicht als Inspector-Feld vorhanden, steht sie noch
+fest im Code in `GameBootstrap` und sollte bei Bedarf dort analog zu
+`bunchShoulderOffset` herausgezogen werden.
+
 ## Steuerung
 
 - **Auflegen:** `A`/`D`, um die Schulter unter die rote Zielmarkierung zu
