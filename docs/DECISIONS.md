@@ -11,6 +11,41 @@ verworfen wurde.
 
 ---
 
+## 2026-09-21 — Stufenlose Stauden statt drei Längenstufen, Länge wirkt aufs Pendel
+
+Die Staudenlänge war ein Enum mit drei Stufen (`kurz/mittel/lang`). Jetzt
+sind Gewicht und Länge stufenlos zufällig (GDD 4.3), und die Dicke ergibt
+sich aus Gewicht pro Länge statt separat gewürfelt zu werden — sonst gäbe
+es 100-kg-Zwerge. Gewicht ist teilweise mit der Länge korreliert, weil GDD
+4.3 „schwere und lange Stauden = mehr Geld" verlangt; die Korrelation ist
+bewusst unvollständig, damit es weiterhin lang-und-dünn und kurz-und-dick
+gibt.
+
+**Physik:** GDD 3.4 schreibt `α = (gravity / length) * sin(θ) * weightFactor`,
+aber die Länge ging nie ein — `gravityOverLength` war eine Konstante. Jetzt
+teilt die Länge diesen Term tatsächlich. Ergebnis sind zwei unterschiedliche
+Risikoprofile statt nur „groß = schwer":
+
+| Staude | Kippen | Snap bei Dauerbelastung |
+|---|---|---|
+| klein & leicht (30 kg, kurz) | 2,1 | nach 18,5 s |
+| lang & dünn (35 kg) | 1,1 (träge) | nach 2,6 s |
+| kurz & dick (60 kg) | 4,2 (zappelig) | nach 9,3 s |
+| groß & schwer (100 kg, lang) | 3,2 | nach 0,9 s |
+
+Lange Stauden kippen also träger (langes Pendel), brechen aber schnell —
+genau das, was GDD 3.5 beschreibt („Kurze Stauden snappen praktisch nie,
+lange sind das eigentliche Risiko"). Kleine, leichte Stauden sind in beiden
+Dimensionen die einfachsten ([E] von Olli).
+
+**Begründung für Kalibrierung auf `LengthScale = 1.0`:** Alle Startwerte aus
+GDD 3.6 sind auf eine mittlere Staude geeicht. Bei Länge 1,0 rechnet die
+Simulation deshalb exakt wie vorher, damit das mühsam getunte
+`controlStrength` gültig bleibt.
+
+**Noch nicht spielgetestet** — die Zahlen oben stammen aus einer
+Monte-Carlo-Rechnung, nicht aus dem Editor.
+
 ## 2026-09-21 — Hybrid: Layout in der Szene, Systeme weiter im Code
 
 Ersetzt den vorherigen "alles zur Laufzeit"-Ansatz (siehe Eintrag unten).

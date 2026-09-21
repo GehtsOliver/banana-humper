@@ -21,6 +21,7 @@ namespace BananaHumper.UI
         Text dayText;
         Text moneyText;
         Text angleText;
+        Text bunchText;
         Image energyFill;
         Image stressFill;
         GameObject endPanel;
@@ -73,9 +74,10 @@ namespace BananaHumper.UI
             dayText = CreateText(root, "DayText", new Vector2(20, -20), TextAnchor.UpperLeft, 28);
             moneyText = CreateText(root, "MoneyText", new Vector2(20, -55), TextAnchor.UpperLeft, 28);
             angleText = CreateText(root, "AngleText", new Vector2(20, -90), TextAnchor.UpperLeft, 22);
+            bunchText = CreateText(root, "BunchText", new Vector2(20, -120), TextAnchor.UpperLeft, 22);
 
-            energyFill = CreateBar(root, "EnergyBar", new Vector2(20, -130), new Color(0.15f, 0.6f, 0.2f));
-            stressFill = CreateBar(root, "StressBar", new Vector2(20, -160), new Color(0.7f, 0.6f, 0.1f));
+            energyFill = CreateBar(root, "EnergyBar", new Vector2(20, -160), new Color(0.15f, 0.6f, 0.2f));
+            stressFill = CreateBar(root, "StressBar", new Vector2(20, -190), new Color(0.7f, 0.6f, 0.1f));
 
             BuildEndPanel(root);
 
@@ -194,6 +196,9 @@ namespace BananaHumper.UI
             if (shift == null) return;
 
             dayText.text = $"Tag {shift.Day}";
+
+            var bunch = shift.CurrentBunch;
+            bunchText.text = bunch != null ? $"Staude: {bunch.Description}" : string.Empty;
 
             if (balance != null)
             {

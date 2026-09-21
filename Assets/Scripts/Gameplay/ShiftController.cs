@@ -58,6 +58,8 @@ namespace BananaHumper.Gameplay
         public int Day { get; private set; } = 1;
         public TripPhase CurrentPhase { get; private set; }
         public bool IsShiftActive { get; private set; }
+        /// <summary>Staude des laufenden Trips - null vor dem ersten Trip. Fuer die HUD-Anzeige (GDD 4.3).</summary>
+        public BunchData CurrentBunch => currentBunch;
 
         public event Action OnShiftStarted;
         public event Action<int> OnDelivered;
@@ -131,7 +133,7 @@ namespace BananaHumper.Gameplay
         IEnumerator RunOneTrip()
         {
             currentBunch = BunchData.GenerateForDay(Day);
-            bunchVisualController?.Build(currentBunch.Length);
+            bunchVisualController?.Build(currentBunch);
 
             if (skipPlacement)
             {

@@ -43,6 +43,8 @@ namespace BananaHumper.Config
         public float stressBendWarning = 80f;
 
         [Header("Längenfaktor (3.5)")]
+        // Stuetzpunkte der Belastungskurve: Die Staudenlaenge ist stufenlos
+        // (BunchData.LengthScale), diese drei GDD-3.6-Werte spannen sie auf.
         public float lengthFactorShort = 0.3f;
         public float lengthFactorMedium = 1.0f;
         public float lengthFactorLong = 1.8f;
@@ -86,14 +88,22 @@ namespace BananaHumper.Config
         public float ComfortAngleRad => comfortAngleDeg * Mathf.Deg2Rad;
         public float RedWarningAngleRad => MaxAngleRad * redWarningFraction;
 
-        public float LengthFactor(BunchLength length)
+        /// <summary>
+        /// Belastungsfaktor zur stufenlosen Staudenlaenge (GDD 3.5): unterhalb
+        /// der mittleren Staude wird zwischen kurz und mittel interpoliert,
+        /// darueber zwischen mittel und lang. Bei LengthScale 1.0 kommt exakt
+        /// lengthFactorMedium heraus, damit die geeichten Werte weiter gelten.
+        /// </summary>
+        public float StressLengthFactor(float lengthScale)
         {
-            switch (length)
+            if (lengthScale <= BunchData.MediumLengthScale)
             {
-                case BunchLength.Short: return lengthFactorShort;
-                case BunchLength.Long: return lengthFactorLong;
-                default: return lengthFactorMedium;
+                return Mathf.Lerp(lengthFactorShort, lengthFactorMedium,
+                    Mathf.InverseLerp(BunchData.ShortLengthScale, BunchData.MediumLengthScale, lengthScale));
             }
+
+            return Mathf.Lerp(lengthFactorMedium, lengthFactorLong,
+                Mathf.InverseLerp(BunchData.MediumLengthScale, BunchData.LongLengthScale, lengthScale));
         }
     }
 }

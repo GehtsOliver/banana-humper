@@ -101,13 +101,13 @@ Dasselbe gilt für Boden, Bananenstaude und HUD.
 | Datei | GDD-Kapitel | Zweck |
 |---|---|---|
 | `Config/BalanceConfig.cs` | 3.6 | Tuning-Werte als ScriptableObject |
-| `Gameplay/BunchData.cs` | 4.3 | Zufälliges Gewicht/Länge pro Staude |
+| `Gameplay/BunchData.cs` | 4.3 | Stufenlos zufälliges Gewicht/Länge pro Staude, Dicke daraus abgeleitet |
 | `Gameplay/PlacementController.cs` | 3.2 | Auflegen, Offset-Berechnung |
 | `Gameplay/BalanceController.cs` | 3.4, 3.5 | Pendel-Simulation, Belastung, Snap, Umsetzen |
 | `Gameplay/EnergySystem.cs` | 4.2 | Energieverbrauch und Schichtende |
 | `Gameplay/EconomySystem.cs` | 4.1, 4.3, 5.1 | Lohn und Erfahrung |
 | `Gameplay/ShiftController.cs` | 3.1 | Trip-Ablauf-Statemachine |
-| `Gameplay/BananaBunchVisual.cs` | 3.5, 3.8, 8.2 | Prozedurale Bananenstaude (gesund/durchgebogen/gesnappt), Laenge aus Fingerzahl |
+| `Gameplay/BananaBunchVisual.cs` | 3.5, 3.8, 8.2 | Prozedurale Bananenstaude (gesund/durchgebogen/gesnappt), Größe/Länge/Dicke aus `BunchData` |
 | `Gameplay/PlayerAnimator.cs` | 8.1 | Treibt den importierten Kenney-Walk-Zyklus der Spielfigur |
 | `UI/HUDController.cs` | 9 | Minimales Schicht-HUD, zur Laufzeit erzeugt |
 | `Bootstrap/GameBootstrap.cs` | – | Verdrahtet die Systeme, baut prozedurale Formen auf die Szenen-Anker |

@@ -66,7 +66,13 @@ namespace BananaHumper.Gameplay
         {
             if (!IsActive || IsRepositioning || currentBunch == null) return;
 
-            float weightFactor = currentBunch.Weight / 50f;
+            float weightFactor = currentBunch.Weight / BunchData.ReferenceWeight;
+            // GDD 3.4 schreibt "gravity / length" - die Laenge ging bisher nicht
+            // ein, weil gravityOverLength eine Konstante war. Jetzt teilt die
+            // stufenlose Staudenlaenge den Schwerkraft-Term: lange Stauden
+            // kippen traeger (langes Pendel), kurze schneller und zappeliger.
+            // Ihr eigentliches Risiko ist dafuer der Snap (StressLengthFactor).
+            float gravityTerm = config.gravityOverLength / currentBunch.LengthScale;
             float wobbleAmplitude = isRunning ? config.wobbleRun : config.wobbleWalk;
             stepPhase += (isRunning ? config.runSpeedMultiplier : 1f) * config.stepFrequency * dt;
             float noise = (UnityEngine.Random.value * 2f - 1f) * config.wobbleNoise;
@@ -87,7 +93,7 @@ namespace BananaHumper.Gameplay
             float impulse = pendingImpulse;
             pendingImpulse = 0f;
 
-            float alpha = config.gravityOverLength * Mathf.Sin(Theta) * weightFactor
+            float alpha = gravityTerm * Mathf.Sin(Theta) * weightFactor
                         + config.offsetTorque * Offset * weightFactor
                         - config.damping * Omega
                         - config.controlStrength * steerSmoothed
@@ -98,7 +104,7 @@ namespace BananaHumper.Gameplay
             Theta += Omega * dt;
 
             float haltekraft = Mathf.Abs(Offset) + Mathf.Max(0f, Mathf.Abs(Theta) - config.ComfortAngleRad) / config.MaxAngleRad;
-            float lengthFactor = config.LengthFactor(currentBunch.Length);
+            float lengthFactor = config.StressLengthFactor(currentBunch.LengthScale);
             if (haltekraft > config.haltekraftThreshold)
             {
                 Stress += haltekraft * lengthFactor * weightFactor * config.stressRate * dt;

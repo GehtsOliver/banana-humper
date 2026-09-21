@@ -7,8 +7,13 @@ namespace BananaHumper.Gameplay
     /// Prozedural gebaute Bananenstaude aus mehreren "Fingern" (kein freies CC0-
     /// Bananen-Asset gefunden, siehe docs/THIRD_PARTY_ASSETS.md). Deckt die drei
     /// Sichtzustaende aus GDD 8.2 ab: gesund, unter Belastung durchgebogen,
-    /// gesnappt. Die Finger-Anzahl/-Laenge variiert mit der Staudenlaenge (4.3),
-    /// sodass kurze/mittlere/lange Stauden auch optisch unterscheidbar sind.
+    /// gesnappt.
+    ///
+    /// Groesse, Laenge und Dicke kommen stufenlos aus <see cref="BunchData"/>
+    /// (GDD 4.3), damit man der Staude vor dem Losgehen ansieht, was einen
+    /// erwartet: lang und duenn faellt langsamer, bricht aber schnell; kurz und
+    /// dick ist zappelig, haelt aber fast alles aus.
+    ///
     /// Kann per <see cref="broomTestMode"/> stattdessen einen Besen anzeigen,
     /// um die Balance-Physik isoliert zu testen.
     /// </summary>
@@ -21,21 +26,21 @@ namespace BananaHumper.Gameplay
         static readonly Color BroomBristleColor = new Color(0.8f, 0.68f, 0.3f);
 
         /// <summary>
-        /// TEMPORAER (Nutzerwunsch): zeigt statt der Bananenstaude einen langen
-        /// Besen, um die Balance-Physik isoliert zu testen - siehe GDD 3.3
-        /// ("wie ein Besen, den man auf der Hand balanciert"). Der Besen pivotiert
-        /// an der Schulter genau wie die Staude, ist aber lang und ungeteilt,
-        /// damit die Neigung (Theta) auf den ersten Blick sichtbar ist. Fuer
-        /// echten Content wieder auf false setzen.
+        /// Zeigt statt der Bananenstaude einen langen Besen, um die Balance-
+        /// Physik isoliert zu testen - siehe GDD 3.3 ("wie ein Besen, den man
+        /// auf der Hand balanciert"). Der Besen pivotiert an der Schulter genau
+        /// wie die Staude und skaliert mit denselben Werten, ist aber lang und
+        /// ungeteilt, damit die Neigung (Theta) sofort ablesbar ist. Standard
+        /// ist aus, damit die Staudenvariation sichtbar wird.
         /// </summary>
-        public bool broomTestMode = true;
+        public bool broomTestMode;
 
         Transform[] fingers;
         SpriteRenderer[] fingerRenderers;
         float[] baseAngles;
 
         /// <summary>Baut die Staude (oder im Testmodus den Besen) neu auf - wird zu Beginn jedes Trips aufgerufen.</summary>
-        public void Build(BunchLength length)
+        public void Build(BunchData bunch)
         {
             for (int i = transform.childCount - 1; i >= 0; i--)
             {
@@ -45,17 +50,22 @@ namespace BananaHumper.Gameplay
             fingerRenderers = null;
             baseAngles = null;
 
+            float lengthT = bunch.LengthT;
+            float thickness = bunch.Thickness;
+
             if (broomTestMode)
             {
-                BuildBroom();
+                BuildBroom(lengthT, thickness);
                 return;
             }
 
-            int count = length == BunchLength.Short ? 4 : length == BunchLength.Long ? 7 : 5;
-            float spread = length == BunchLength.Short ? 40f : length == BunchLength.Long ? 70f : 55f;
-            float fingerLen = length == BunchLength.Short ? 0.5f : length == BunchLength.Long ? 1.0f : 0.75f;
+            int count = Mathf.RoundToInt(Mathf.Lerp(4f, 8f, lengthT));
+            float spread = Mathf.Lerp(38f, 72f, lengthT);
+            float fingerLen = Mathf.Lerp(0.45f, 1.1f, lengthT);
+            float fingerWidth = 0.24f * thickness;
 
-            SpriteFactory.CreateRoundedQuad("Stem", StemColor, new Vector2(0.22f, 0.22f), 0.5f, transform, Vector3.zero, 4);
+            SpriteFactory.CreateRoundedQuad("Stem", StemColor, new Vector2(0.22f, 0.22f) * thickness, 0.5f,
+                transform, Vector3.zero, 4);
 
             fingers = new Transform[count];
             fingerRenderers = new SpriteRenderer[count];
@@ -72,7 +82,7 @@ namespace BananaHumper.Gameplay
                 fingerGo.transform.localPosition = Vector3.zero;
                 fingerGo.transform.localRotation = Quaternion.Euler(0f, 0f, angle);
 
-                var sr = SpriteFactory.CreateRoundedQuad("Shape", HealthyColor, new Vector2(0.24f, fingerLen), 0.7f,
+                var sr = SpriteFactory.CreateRoundedQuad("Shape", HealthyColor, new Vector2(fingerWidth, fingerLen), 0.7f,
                     fingerGo.transform, new Vector3(0f, -fingerLen * 0.45f, 0f), 3);
 
                 fingers[i] = fingerGo.transform;
@@ -84,14 +94,16 @@ namespace BananaHumper.Gameplay
         /// Langer, ungeteilter Besen statt Bananenstaude (siehe broomTestMode).
         /// Liegt bei Theta=0 horizontal auf der Schulter (Pivot bei (0,0,0),
         /// mittig auf dem Schaft) - wie eine Balancierstange, nicht wie ein
-        /// haengender Bananenbund. Rotiert um genau diesen Mittelpunkt mit Theta.
+        /// haengender Bananenbund. Skaliert mit derselben Laenge/Dicke wie die
+        /// Staude, damit der Testmodus dieselbe Variation zeigt.
         /// </summary>
-        void BuildBroom()
+        void BuildBroom(float lengthT, float thickness)
         {
-            const float shaftLength = 2.2f;
-            const float shaftWidth = 0.09f;
+            float shaftLength = Mathf.Lerp(1.5f, 3.0f, lengthT);
+            float shaftWidth = 0.09f * thickness;
 
-            SpriteFactory.CreateRoundedQuad("Grip", StemColor, new Vector2(0.16f, 0.16f), 0.6f, transform, Vector3.zero, 4);
+            SpriteFactory.CreateRoundedQuad("Grip", StemColor, new Vector2(0.16f, 0.16f) * thickness, 0.6f,
+                transform, Vector3.zero, 4);
             SpriteFactory.CreateRoundedQuad("Handle", BroomHandleColor, new Vector2(shaftLength, shaftWidth), 0.3f,
                 transform, Vector3.zero, 3);
             SpriteFactory.CreateRoundedQuad("Bristles", BroomBristleColor, new Vector2(shaftLength * 0.22f, shaftWidth * 3.5f), 0.35f,
