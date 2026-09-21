@@ -1,312 +1,258 @@
 using System;
-using System.Collections;
+using System.Collections.Generic;
 using UnityEngine;
 using BananaHumper.Config;
 
 namespace BananaHumper.Gameplay
 {
-    public enum TripPhase
+    public enum CatchQuality
     {
-        Placement,
-        Carrying,
-        WalkingBack
+        Perfect,
+        Normal,
+        Graze,
+        Missed
     }
 
     public struct ShiftSummary
     {
-        public int TripsCompleted;
-        public int TripsFallen;
-        public int TripsSnapped;
+        public int BunchesDelivered;
+        public int BunchesMissed;
+        public int BunchesDropped;
         public double MoneyEarned;
         public double ExperienceEarned;
     }
 
     /// <summary>
-    /// Orchestrates one Trip after another (GDD 3.1) until the Energy budget
-    /// for the Schicht runs out (4.2). This is the Kern-Loop: everything else
-    /// (Quote, Verwarnungen, Prestige, ...) is deliberately out of scope for
-    /// the Stufe-A Graybox and is layered on top later.
+    /// Der Kern-Loop seit GDD v0.9: mehrere Cutter-Stationen schneiden parallel,
+    /// der Spieler muss rechtzeitig unter der fallenden Staude stehen und sie
+    /// dann zum mitfahrenden Trailer schleppen. Wer schleppt, kann nicht fangen -
+    /// darin liegt die zentrale Entscheidung.
+    ///
+    /// Dieses Skript taktet alle Beteiligten (Stationen, Trailer, Spieler,
+    /// Pendel) statt einer Trip-Statemachine wie bis v0.8. Alles andere
+    /// (Tagesquote, Verwarnungen, Koerper/Shop) ist bewusst noch nicht drin -
+    /// Stufe A validiert erst diesen Loop.
     /// </summary>
     public class ShiftController : MonoBehaviour
     {
         [Header("Config & Systeme")]
         public BalanceConfig config;
-        public PlacementController placement;
         public BalanceController balance;
         public EnergySystem energy;
         public EconomySystem economy;
 
-        [Header("Visuals")]
-        public Transform playerRoot;
-        public Transform bunchVisual;
-        public BananaBunchVisual bunchVisualController;
-        public PlayerAnimator playerAnimator;
-        public float cutterX;
-        public float trailerX;
-
-        [Header("Run-Unlock (Platzhalter bis ProgressionSystem existiert)")]
-        public bool runUnlocked = true;
-
-        /// <summary>
-        /// TEMPORAER (Nutzerwunsch): reduziert den Trip auf den reinen Core Loop
-        /// - kein Auflegen-Minispiel (GDD 3.2), die Staude liegt beim Trip-Start
-        /// direkt zentriert auf der Schulter. Fuer echten Content wieder auf
-        /// false setzen, dann laeuft wieder das volle Auflegen aus 3.2.
-        /// </summary>
-        public bool skipPlacement = true;
+        [Header("Welt")]
+        public PlayerController player;
+        public TrailerController trailer;
+        public List<CutterStation> stations = new List<CutterStation>();
 
         public int Day { get; private set; } = 1;
-        public TripPhase CurrentPhase { get; private set; }
         public bool IsShiftActive { get; private set; }
-        /// <summary>Staude des laufenden Trips - null vor dem ersten Trip. Fuer die HUD-Anzeige (GDD 4.3).</summary>
-        public BunchData CurrentBunch => currentBunch;
+        public BunchData CarriedBunch => player != null ? player.CarriedBunch : null;
+        /// <summary>Letzte Catch-Bewertung - fuers HUD-Feedback.</summary>
+        public CatchQuality LastCatch { get; private set; } = CatchQuality.Missed;
 
         public event Action OnShiftStarted;
         public event Action<int> OnDelivered;
-        public event Action OnTripFallen;
-        public event Action OnTripSnapped;
+        public event Action<CatchQuality> OnCaught;
+        public event Action OnBunchMissed;
+        public event Action OnBunchDropped;
         public event Action<ShiftSummary> OnShiftEnded;
 
-        BunchData currentBunch;
-        bool placementDone;
-        float placementOffset;
-        bool energyRanOutMidCarry;
-
+        readonly List<FallingBunch> inFlight = new List<FallingBunch>();
         ShiftSummary summary;
+        double moneyAtShiftStart;
+        double experienceAtShiftStart;
+        float carriedPayoutFactor = 1f;
 
         /// <summary>
-        /// Muss aufgerufen werden, nachdem alle public Referenzen (config, placement,
-        /// balance, energy, economy, ...) gesetzt wurden. Nicht in Awake(), weil
-        /// GameBootstrap die Referenzen erst nach AddComponent&lt;ShiftController&gt;()
-        /// zuweist und Awake() bereits synchron beim AddComponent-Aufruf feuert.
+        /// Nach dem Setzen aller Referenzen aufrufen, nicht in Awake: GameBootstrap
+        /// weist die Felder erst nach AddComponent zu, Awake feuert aber schon
+        /// waehrend AddComponent.
         /// </summary>
         public void Initialize()
         {
-            balance.OnFallen += HandleFallen;
-            balance.OnSnapped += HandleSnapped;
-            placement.OnPlacementResolved += HandlePlacementResolved;
+            balance.OnDropped += HandleDropped;
+            foreach (var station in stations)
+            {
+                if (station != null) station.OnCut += HandleStationCut;
+            }
         }
 
         void OnDestroy()
         {
-            balance.OnFallen -= HandleFallen;
-            balance.OnSnapped -= HandleSnapped;
-            placement.OnPlacementResolved -= HandlePlacementResolved;
+            if (balance != null) balance.OnDropped -= HandleDropped;
+            foreach (var station in stations)
+            {
+                if (station != null) station.OnCut -= HandleStationCut;
+            }
         }
 
-        double moneyAtShiftStart;
-        double experienceAtShiftStart;
-
-        /// <summary>Setzt Geld/Erfahrung auf 0 - nur beim Start eines neuen Farm-Durchlaufs (Prestige), nicht pro Schicht (4.1).</summary>
-        public void ResetRun()
-        {
-            economy.ResetRun();
-        }
+        public void ResetRun() => economy.ResetRun();
 
         public void StartShift(int day)
         {
             Day = day;
             moneyAtShiftStart = economy.Money;
             experienceAtShiftStart = economy.Experience;
-            energy.StartShift();
             summary = new ShiftSummary();
-            placement.Setup(cutterX);
-            SetPlayerPosition(cutterX);
-            IsShiftActive = true;
-            OnShiftStarted?.Invoke();
-            StartCoroutine(ShiftLoop());
-        }
+            energy.StartShift();
+            player.ClearBunch();
 
-        IEnumerator ShiftLoop()
-        {
-            while (!energy.IsDepleted)
+            foreach (var station in stations)
             {
-                yield return StartCoroutine(RunOneTrip());
+                if (station != null) station.Initialize(config, StationVisual(station), day);
             }
 
-            IsShiftActive = false;
-            summary.MoneyEarned = economy.Money - moneyAtShiftStart;
-            summary.ExperienceEarned = economy.Experience - experienceAtShiftStart;
-            OnShiftEnded?.Invoke(summary);
+            IsShiftActive = true;
+            OnShiftStarted?.Invoke();
         }
 
-        IEnumerator RunOneTrip()
+        BananaBunchVisual StationVisual(CutterStation station)
         {
-            currentBunch = BunchData.GenerateForDay(Day);
-            bunchVisualController?.Build(currentBunch);
+            return station.bunchAnchor != null
+                ? station.bunchAnchor.GetComponentInChildren<BananaBunchVisual>(true)
+                : null;
+        }
 
-            if (skipPlacement)
+        void Update()
+        {
+            if (!IsShiftActive) return;
+
+            float dt = Time.deltaTime;
+
+            foreach (var station in stations)
             {
-                // TEMPORAER (Nutzerwunsch): reiner Core Loop, Staude liegt beim
-                // Trip-Start bereits mittig auf der Schulter, kein Auflegen-
-                // Minispiel. Fuer echten Content wieder auf false setzen.
-                CurrentPhase = TripPhase.Placement;
-                playerAnimator?.SetWalking(false, false);
-                placementOffset = 0f;
+                if (station != null) station.Tick(dt);
+            }
+            trailer.Tick(dt);
+            player.Tick(dt);
+
+            if (player.IsCarrying) TickCarrying(dt);
+
+            if (energy.IsDepleted) EndShift();
+        }
+
+        void TickCarrying(float dt)
+        {
+            if (Input.GetKeyDown(KeyCode.E) && balance.TryBeginReposition())
+            {
+                energy.ApplyRepositionCost();
+            }
+
+            if (!balance.IsRepositioning)
+            {
+                balance.Tick(dt, player.IsRunning);
+                energy.ConsumeCarrying(player.CarriedBunch.Weight, player.IsRunning, dt);
             }
             else
             {
-                // --- Auflegen ---
-                CurrentPhase = TripPhase.Placement;
-                placementDone = false;
-                playerAnimator?.SetWalking(false, false);
-                placement.BeginPlacement();
-                while (!placementDone) yield return null;
+                player.StandStill();
             }
 
-            balance.BeginTrip(currentBunch, placementOffset);
-            SetBunchVisualActive(true);
+            player.ApplyCarryPose(balance.Theta, balance.Offset);
 
-            // --- Tragen zum Trailer ---
-            // Bewegung per A/D (Design-Entscheidung, ersetzt die automatische
-            // Bewegung aus GDD 3.1 [A]); Balancieren laeuft parallel per
-            // linker/rechter Maustaste (BalanceController.Tick liest die
-            // Maustasten unabhaengig davon) - deshalb sitzt Rennen hier auf
-            // Shift statt auf der (jetzt fuers Balancieren belegten) Maus.
-            CurrentPhase = TripPhase.Carrying;
-            energyRanOutMidCarry = false;
-            float minX = Mathf.Min(cutterX, trailerX);
-            float maxX = Mathf.Max(cutterX, trailerX);
-            float playerX = cutterX;
-            playerAnimator?.SetFacing(trailerX < cutterX);
+            // Nach balance.Tick pruefen: Ein Sturz in diesem Frame hat die
+            // Staude bereits abgeraeumt, dann gibt es nichts abzuliefern.
+            if (player.IsCarrying && trailer.IsInDeliveryRange(player.PositionX)) Deliver();
+        }
 
-            while (Mathf.Abs(playerX - trailerX) > 0.05f)
+        void HandleStationCut(CutterStation station, BunchData bunch, Vector3 dropPosition)
+        {
+            float shoulderY = player.transform.position.y;
+            var falling = FallingBunch.Spawn(bunch, dropPosition, shoulderY, config.fallSeconds, player.shoulderBunch);
+            falling.OnImpact += HandleImpact;
+            inFlight.Add(falling);
+        }
+
+        void HandleImpact(FallingBunch falling)
+        {
+            falling.OnImpact -= HandleImpact;
+            inFlight.Remove(falling);
+
+            CatchQuality quality = EvaluateCatch(falling.ImpactX);
+            LastCatch = quality;
+
+            if (quality == CatchQuality.Missed)
             {
-                float dt = Time.deltaTime;
-
-                // E statt rechter Maustaste - die ist jetzt fuers
-                // Balancieren belegt (siehe BalanceController.Tick).
-                if (Input.GetKeyDown(KeyCode.E) && balance.TryBeginReposition())
-                {
-                    energy.ApplyRepositionCost();
-                }
-
-                if (!balance.IsRepositioning)
-                {
-                    float moveInput = 0f;
-                    if (Input.GetKey(KeyCode.D)) moveInput += 1f;
-                    if (Input.GetKey(KeyCode.A)) moveInput -= 1f;
-                    bool running = runUnlocked && Input.GetKey(KeyCode.LeftShift) && moveInput != 0f;
-
-                    balance.Tick(dt, running);
-                    energy.ConsumeCarrying(currentBunch.Weight, running, dt);
-
-                    if (moveInput != 0f)
-                    {
-                        float speed = config.walkSpeed * (running ? config.runSpeedMultiplier : 1f);
-                        playerX = Mathf.Clamp(playerX + moveInput * speed * dt, minX, maxX);
-                        SetPlayerPosition(playerX);
-                        playerAnimator?.SetFacing(moveInput < 0f);
-                    }
-                    playerAnimator?.SetWalking(moveInput != 0f, running);
-                }
-                else
-                {
-                    playerAnimator?.SetWalking(false, false);
-                }
-
-                UpdateBunchVisual();
-
-                if (energy.IsDepleted)
-                {
-                    energyRanOutMidCarry = true;
-                    break;
-                }
-                if (balance.HasFailed)
-                {
-                    break;
-                }
-
-                yield return null;
+                summary.BunchesMissed++;
+                falling.ShowCrashAndDestroy(1.2f);
+                OnBunchMissed?.Invoke();
+                return;
             }
 
-            balance.StopTrip();
-            SetBunchVisualActive(false);
+            // Versatz aus der Catch-Qualitaet: sauber gefangen heisst leichter
+            // Rest-Weg (GDD 3.3). Vorzeichen zeigt, auf welcher Seite die Staude
+            // aufgekommen ist.
+            float delta = falling.ImpactX - player.PositionX;
+            float offset = Mathf.Clamp(delta / config.catchRadius, -1f, 1f);
+            if (quality == CatchQuality.Perfect) offset = 0f;
 
-            if (energyRanOutMidCarry)
+            carriedPayoutFactor = quality == CatchQuality.Graze ? 1f - config.grazePayoutPenalty : 1f;
+
+            var bunch = falling.Bunch;
+            Destroy(falling.gameObject);
+            player.TakeBunch(bunch);
+            balance.BeginCarry(bunch, offset);
+            OnCaught?.Invoke(quality);
+        }
+
+        CatchQuality EvaluateCatch(float impactX)
+        {
+            // Wer schon eine Staude traegt, hat keine Hand frei - das ist der
+            // Kern der Entscheidung "schleppen oder fangen" (GDD 3.1).
+            if (player.IsCarrying) return CatchQuality.Missed;
+
+            float d = Mathf.Abs(impactX - player.PositionX);
+            if (d <= config.perfectCatchWindow) return CatchQuality.Perfect;
+            if (d <= config.catchRadius * config.normalCatchFraction) return CatchQuality.Normal;
+            if (d <= config.catchRadius) return CatchQuality.Graze;
+            return CatchQuality.Missed;
+        }
+
+        void Deliver()
+        {
+            var bunch = player.CarriedBunch;
+            balance.StopCarry();
+            player.ClearBunch();
+
+            int payout = economy.RegisterDelivery(bunch, carriedPayoutFactor);
+            summary.BunchesDelivered++;
+            OnDelivered?.Invoke(payout);
+        }
+
+        void HandleDropped()
+        {
+            var bunch = player.CarriedBunch;
+            if (bunch == null) return;
+
+            economy.RegisterFailedCarry(bunch);
+            energy.ApplyDropPenalty();
+            summary.BunchesDropped++;
+            player.ShowHurt();
+            player.ClearBunch();
+            OnBunchDropped?.Invoke();
+        }
+
+        void EndShift()
+        {
+            IsShiftActive = false;
+            balance.StopCarry();
+            player.ClearBunch();
+
+            foreach (var station in stations)
             {
-                // 4.2: Energie leer -> Schicht endet sofort, ohne Zusatzstrafe.
-                yield break;
+                if (station != null) station.StopForShiftEnd();
             }
-
-            if (!balance.HasFailed)
+            foreach (var falling in inFlight)
             {
-                int payout = economy.RegisterDelivery(currentBunch);
-                summary.TripsCompleted++;
-                OnDelivered?.Invoke(payout);
+                if (falling != null) Destroy(falling.gameObject);
             }
+            inFlight.Clear();
 
-            // --- Rueckweg (leer, automatisch, schnell) ---
-            CurrentPhase = TripPhase.WalkingBack;
-            yield return StartCoroutine(WalkBack());
-        }
-
-        IEnumerator WalkBack()
-        {
-            float elapsed = 0f;
-            float startX = playerRoot != null ? playerRoot.position.x : cutterX;
-            playerAnimator?.SetFacing(cutterX < startX);
-            playerAnimator?.SetWalking(true, false);
-            while (elapsed < config.walkBackSeconds && !energy.IsDepleted)
-            {
-                float dt = Time.deltaTime;
-                energy.ConsumeWalkBack(dt);
-                elapsed += dt;
-                float t = Mathf.Clamp01(elapsed / config.walkBackSeconds);
-                SetPlayerPosition(Mathf.Lerp(startX, cutterX, t));
-                yield return null;
-            }
-            SetPlayerPosition(cutterX);
-        }
-
-        void HandlePlacementResolved(float offset, bool sweetSpot)
-        {
-            placementOffset = offset;
-            placementDone = true;
-        }
-
-        void HandleFallen()
-        {
-            economy.RegisterFailedTrip(currentBunch);
-            energy.ApplyFallPenalty();
-            summary.TripsFallen++;
-            playerAnimator?.ShowHurt();
-            OnTripFallen?.Invoke();
-        }
-
-        void HandleSnapped()
-        {
-            economy.RegisterFailedTrip(currentBunch);
-            energy.ApplySnapPenalty();
-            summary.TripsSnapped++;
-            bunchVisualController?.SetSnapped();
-            OnTripSnapped?.Invoke();
-        }
-
-        void SetPlayerPosition(float x)
-        {
-            if (playerRoot != null) playerRoot.position = new Vector3(x, playerRoot.position.y, 0f);
-        }
-
-        void UpdateBunchVisual()
-        {
-            if (bunchVisual == null) return;
-            bunchVisual.localRotation = Quaternion.Euler(0f, 0f, -balance.Theta * Mathf.Rad2Deg);
-            bunchVisual.localPosition = new Vector3(balance.Offset * config.placementToleranceWorldUnits * 0.5f, bunchVisual.localPosition.y, 0f);
-            bunchVisualController?.UpdateStress(balance.Stress / 100f, balance.IsCreaking, balance.IsBending);
-        }
-
-        /// <summary>Blendet die Staude aus, solange sie nicht getragen wird (Auflegen, Rueckweg), damit ein
-        /// Fallen/Snap nicht als "kaputtes, an der Schulter klebendes Objekt" haengen bleibt.</summary>
-        void SetBunchVisualActive(bool active)
-        {
-            if (bunchVisual == null) return;
-            bunchVisual.gameObject.SetActive(active);
-            if (active)
-            {
-                bunchVisual.localRotation = Quaternion.identity;
-                bunchVisual.localPosition = new Vector3(0f, bunchVisual.localPosition.y, 0f);
-            }
+            summary.MoneyEarned = economy.Money - moneyAtShiftStart;
+            summary.ExperienceEarned = economy.Experience - experienceAtShiftStart;
+            OnShiftEnded?.Invoke(summary);
         }
     }
 }

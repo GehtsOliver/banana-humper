@@ -1,12 +1,12 @@
 # Banana Humper
 
-Umsetzung des GDD (v0.8) für den Kern-Loop, nach Roadmap **Stufe A**
-("Kern-Loop validieren und polieren", GDD Kapitel 16.2/16.3): nur die
-Balance-Mechanik aus Kapitel 3 plus das Minimum an Ressourcen aus 4.1–4.3,
-damit sich Trips wiederholen lassen. Bewusst **nicht** enthalten: Tagesquote,
-Verwarnungen, Körper/Shop-Progression, Prestige, Zufallsereignisse, Cutter-
-Sprüche, Sound. Das kommt erst, wenn der Kern-Loop laut Roadmap für sich
-allein Spaß macht (Kapitel 12, Graybox-Test).
+Umsetzung des GDD (v0.9) für den Kern-Loop, nach Roadmap **Stufe A**
+("Kern-Loop validieren und polieren", GDD Kapitel 16.2/16.3): mehrere
+Cutter-Stationen schneiden parallel, der Spieler muss rechtzeitig unter der
+fallenden Staude stehen und sie zum mitfahrenden Trailer schleppen. Bewusst
+**nicht** enthalten: Tagesquote, Verwarnungen, Körper/Shop-Progression,
+Prestige, Zufallsereignisse, Cutter-Sprüche, Sound. Das kommt erst, wenn der
+Kern-Loop laut Roadmap für sich allein Spaß macht (Kapitel 12, Graybox-Test).
 
 Die Kunst ist ein erster Schritt in Richtung Kapitel 8: Spielfigur und
 Hintergrund nutzen echte CC0-Vektor-Assets von Kenney.nl statt reiner
@@ -60,41 +60,39 @@ Laufzeit.
 
 | Objekt | Bedeutung |
 |---|---|
+| `Stations/Station0..3` | **Das Level-Design:** Die Abstände zwischen den Stationen bestimmen, wie weit man laufen muss – der wichtigste Tuning-Hebel des Kern-Loops |
 | `Player` | Startposition der Spielfigur |
 | `Player > BunchVisual` | Auflagepunkt der Staude auf der Schulter |
-| `Cutter` | Wo die Staude aufgelegt wird (Trip-Start) |
-| `Trailer` | Trip-Ziel – der Abstand zum Cutter ist die Trip-Länge |
-| `TargetMarker` | Rote Zielmarkierung beim Auflegen |
+| `Trailer` | Startposition des Trailers (fährt zur Laufzeit die Reihe entlang) |
 | `Scenery/*` | Hügel, Bäume, Wolken, Zaun, Gras |
 | `Main Camera` | Bildausschnitt |
 
 Einfach anklicken, verschieben, Szene speichern (`Strg+S`) – fertig. Kein
-Code, keine Inspector-Zahlen abtippen.
+Code, keine Inspector-Zahlen abtippen. Die Reihen-Grenzen, in denen sich
+Spieler und Trailer bewegen dürfen, stehen als `Row Min X` / `Row Max X` im
+`GameBootstrap`-Inspector.
 
-**Noch nicht sichtbar im Edit-Modus:** `Cutter`, `Trailer` und
-`TargetMarker` sind leere Anker. Ihre Formen werden prozedural aus
-kantengeglätteten Vektorshapes gebaut (`SpriteFactory`), und deren Texturen
-entstehen erst zur Laufzeit – solche Sprites lassen sich nicht in einer
-Szenendatei speichern. Verschieben funktioniert trotzdem (der Anker bestimmt
-die Position), man sieht das Ergebnis nur erst beim Drücken von Play.
-Dasselbe gilt für Boden, Bananenstaude und HUD.
+**Noch nicht sichtbar im Edit-Modus:** Die Cutter-Figuren, die Trailer-Form,
+die Schnitt-Balken und die Stauden werden prozedural aus kantengeglätteten
+Vektorshapes gebaut (`SpriteFactory`), und deren Texturen entstehen erst zur
+Laufzeit – solche Sprites lassen sich nicht in einer Szenendatei speichern.
+Verschieben funktioniert trotzdem (der Anker bestimmt die Position), man
+sieht das Ergebnis nur erst beim Drücken von Play.
 
 ## Steuerung
 
-- **Auflegen:** `A`/`D`, um die Schulter unter die rote Zielmarkierung zu
-  bringen, bevor die Staude fällt.
-- **Tragen - Laufen:** `A`/`D` zum Trailer bzw. zurück (ersetzt die
-  automatische Bewegung aus GDD 3.1 [A] - bewusste Design-Entscheidung).
-- **Tragen - Balancieren:** zusätzlich, gleichzeitig zum Laufen, linke/
-  rechte Maustaste halten, um die Staude auszugleichen (GDD 3.3, siehe
-  [docs/DECISIONS.md](docs/DECISIONS.md) für die Zwischenstationen dieser
-  Steuerung).
-- **Linke Umschalttaste (Shift) halten (während `A`/`D` gedrückt ist):**
-  rennen (schneller, mehr Wackeln, mehr Energieverbrauch).
-- **`E`:** umsetzen (kurzer Stillstand, reduziert den Auflage-Versatz,
-  kostet Energie).
-- Schicht endet automatisch, wenn die Energie leer ist; Button im
-  Endscreen startet die nächste Schicht.
+- **Laufen:** `A`/`D` durch die Reihe.
+- **Rennen:** `Shift` halten (schneller, mehr Wackeln, mehr Energie – aber
+  nur mit Staude kostet Laufen überhaupt Energie).
+- **Fangen:** rechtzeitig unter der fallenden Staude stehen. Je mittiger,
+  desto besser: perfekt = kein Versatz, Streifer = −25 % Lohn und starker
+  Versatz.
+- **Tragen - Ausgleichen:** linke/rechte Maustaste halten, um die Staude
+  gerade zu halten (verzeihend ausgelegt, nicht mehr die Herausforderung).
+- **`E`:** umsetzen (kurzer Stillstand, reduziert den Versatz, kostet
+  Energie).
+- **Abliefern:** mit Staude zum Trailer laufen – passiert automatisch.
+- Schicht endet automatisch, wenn die Energie leer ist.
 
 ## Code-Struktur
 
@@ -102,12 +100,16 @@ Dasselbe gilt für Boden, Bananenstaude und HUD.
 |---|---|---|
 | `Config/BalanceConfig.cs` | 3.6 | Tuning-Werte als ScriptableObject |
 | `Gameplay/BunchData.cs` | 4.3 | Stufenlos zufälliges Gewicht/Länge pro Staude, Dicke daraus abgeleitet |
-| `Gameplay/PlacementController.cs` | 3.2 | Auflegen, Offset-Berechnung |
-| `Gameplay/BalanceController.cs` | 3.4, 3.5 | Pendel-Simulation, Belastung, Snap, Umsetzen |
+| `Gameplay/CutterStation.cs` | 3.2 | Eine Station: Balken füllen, abschlagen, nachwachsen |
+| `Gameplay/ProgressBarVisual.cs` | 3.2 | Schnitt-Balken über der Station (in der Welt, nicht im HUD) |
+| `Gameplay/FallingBunch.cs` | 3.3 | Fallende Staude, meldet den Aufprall |
+| `Gameplay/PlayerController.cs` | 3.1 | Freie Bewegung in der Reihe, Tragezustand |
+| `Gameplay/TrailerController.cs` | 3.5 | Mitfahrender Trailer, Ablieferung |
+| `Gameplay/BalanceController.cs` | 3.4 | Pendel-Simulation beim Schleppen, Umsetzen |
 | `Gameplay/EnergySystem.cs` | 4.2 | Energieverbrauch und Schichtende |
 | `Gameplay/EconomySystem.cs` | 4.1, 4.3, 5.1 | Lohn und Erfahrung |
-| `Gameplay/ShiftController.cs` | 3.1 | Trip-Ablauf-Statemachine |
-| `Gameplay/BananaBunchVisual.cs` | 3.5, 3.8, 8.2 | Prozedurale Bananenstaude (gesund/durchgebogen/gesnappt), Größe/Länge/Dicke aus `BunchData` |
+| `Gameplay/ShiftController.cs` | 3.1, 3.3 | Taktet alles, wertet Catch-Qualität aus, Schichtende |
+| `Gameplay/BananaBunchVisual.cs` | 3.8, 8.2 | Prozedurale Bananenstaude, Größe/Länge/Dicke aus `BunchData` |
 | `Gameplay/PlayerAnimator.cs` | 8.1 | Treibt den importierten Kenney-Walk-Zyklus der Spielfigur |
 | `UI/HUDController.cs` | 9 | Minimales Schicht-HUD, zur Laufzeit erzeugt |
 | `Bootstrap/GameBootstrap.cs` | – | Verdrahtet die Systeme, baut prozedurale Formen auf die Szenen-Anker |
@@ -118,8 +120,8 @@ Die Aufteilung folgt dem Hybrid-Prinzip (siehe
 [docs/DECISIONS.md](docs/DECISIONS.md)):
 
 - **In der Szene** (`Main.unity`, vom Editor-Tool angelegt, danach von Hand
-  pflegbar): Kamera, Kulisse, Spielfigur samt Animator-Referenzen und die
-  Layout-Anker für Cutter, Trailer, Zielmarkierung und Staude.
+  pflegbar): Kamera, Kulisse, Spielfigur samt Animator-Referenzen, die vier
+  Cutter-Stationen und der Trailer.
 - **Zur Laufzeit von `GameBootstrap`**: die Gameplay-Systeme mitsamt
   Verdrahtung, das HUD und alle prozeduralen Formen, deren Texturen sich
   nicht als Asset speichern lassen.

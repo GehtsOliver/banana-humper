@@ -23,16 +23,21 @@ namespace BananaHumper.Gameplay
             OnExperienceChanged?.Invoke(Experience);
         }
 
-        public int RegisterDelivery(BunchData bunch)
+        /// <summary><paramref name="payoutFactor"/> kommt aus der Catch-Qualitaet: ein Streifer beschaedigt die Staude (GDD 3.3).</summary>
+        public int RegisterDelivery(BunchData bunch, float payoutFactor = 1f)
         {
-            int payout = bunch.PayoutDollars(config);
+            int payout = Mathf.RoundToInt(bunch.PayoutDollars(config) * payoutFactor);
             AddMoney(payout);
             AddExperience(bunch.ExperienceValue(config));
             return payout;
         }
 
-        /// <summary>Gefallene/gesnappte Staude: kein Lohn, aber 50% Erfahrung fuer die getragene Last (5.1).</summary>
-        public void RegisterFailedTrip(BunchData bunch)
+        /// <summary>
+        /// Fallen gelassene Staude: kein Lohn, aber 50 % Erfahrung fuer die bis
+        /// dahin getragene Last (GDD 5.1). Verpasste Stauden landen hier bewusst
+        /// nicht - die hat man nie getragen.
+        /// </summary>
+        public void RegisterFailedCarry(BunchData bunch)
         {
             AddExperience(bunch.ExperienceValue(config) * config.failedTripExperienceFraction);
         }

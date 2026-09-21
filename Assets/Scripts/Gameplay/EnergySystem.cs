@@ -39,13 +39,10 @@ namespace BananaHumper.Gameplay
             Spend(perSecond * dt);
         }
 
-        public void ConsumeWalkBack(float dt)
-        {
-            Spend(config.walkBackEnergyPerSecond * dt);
-        }
-
-        public void ApplyFallPenalty() => Spend(config.fallEnergyPenalty);
-        public void ApplySnapPenalty() => Spend(config.snapEnergyPenalty);
+        // Laufen ohne Staude kostet seit v0.9 nichts (GDD 4.2): Energie ist ein
+        // Budget aus getragenen Kilogramm mal Weg. Genau das macht schwere
+        // Stauden zur Abwaegung statt zur automatisch besseren Wahl.
+        public void ApplyDropPenalty() => Spend(config.dropEnergyPenalty);
         public void ApplyRepositionCost() => Spend(config.repositionEnergyCost);
 
         void Spend(float amount)

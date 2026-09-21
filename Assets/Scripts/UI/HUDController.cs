@@ -22,8 +22,9 @@ namespace BananaHumper.UI
         Text moneyText;
         Text angleText;
         Text bunchText;
+        Text catchText;
         Image energyFill;
-        Image stressFill;
+        float catchTextTimer;
         GameObject endPanel;
         Text endPanelText;
 
@@ -40,7 +41,9 @@ namespace BananaHumper.UI
             BuildCanvas();
 
             economy.OnMoneyChanged += m => moneyText.text = $"$ {m:0}";
-            shift.OnDelivered += _ => { };
+            shift.OnCaught += ShowCatchFeedback;
+            shift.OnBunchMissed += () => FlashCatchText("Verpasst!", new Color(0.95f, 0.3f, 0.25f));
+            shift.OnBunchDropped += () => FlashCatchText("Fallen gelassen!", new Color(0.95f, 0.3f, 0.25f));
             shift.OnShiftEnded += ShowSummary;
         }
 
@@ -75,9 +78,10 @@ namespace BananaHumper.UI
             moneyText = CreateText(root, "MoneyText", new Vector2(20, -55), TextAnchor.UpperLeft, 28);
             angleText = CreateText(root, "AngleText", new Vector2(20, -90), TextAnchor.UpperLeft, 22);
             bunchText = CreateText(root, "BunchText", new Vector2(20, -120), TextAnchor.UpperLeft, 22);
+            catchText = CreateText(root, "CatchText", new Vector2(20, -150), TextAnchor.UpperLeft, 26);
+            catchText.text = string.Empty;
 
-            energyFill = CreateBar(root, "EnergyBar", new Vector2(20, -160), new Color(0.15f, 0.6f, 0.2f));
-            stressFill = CreateBar(root, "StressBar", new Vector2(20, -190), new Color(0.7f, 0.6f, 0.1f));
+            energyFill = CreateBar(root, "EnergyBar", new Vector2(20, -190), new Color(0.15f, 0.6f, 0.2f));
 
             BuildEndPanel(root);
 
@@ -179,13 +183,36 @@ namespace BananaHumper.UI
             endPanel.SetActive(false);
         }
 
+        void ShowCatchFeedback(CatchQuality quality)
+        {
+            switch (quality)
+            {
+                case CatchQuality.Perfect:
+                    FlashCatchText("Perfekt gefangen!", new Color(0.4f, 0.95f, 0.4f));
+                    break;
+                case CatchQuality.Graze:
+                    FlashCatchText("Streifer - Staude beschaedigt", new Color(0.95f, 0.75f, 0.2f));
+                    break;
+                default:
+                    FlashCatchText("Gefangen", Color.white);
+                    break;
+            }
+        }
+
+        void FlashCatchText(string message, Color color)
+        {
+            catchText.text = message;
+            catchText.color = color;
+            catchTextTimer = 1.5f;
+        }
+
         void ShowSummary(ShiftSummary summary)
         {
             endPanelText.text =
                 $"Schicht beendet\n\n" +
-                $"Trips: {summary.TripsCompleted}\n" +
-                $"Gefallen: {summary.TripsFallen}\n" +
-                $"Gesnappt: {summary.TripsSnapped}\n" +
+                $"Abgeliefert: {summary.BunchesDelivered}\n" +
+                $"Verpasst: {summary.BunchesMissed}\n" +
+                $"Fallen gelassen: {summary.BunchesDropped}\n" +
                 $"Verdienst: $ {summary.MoneyEarned:0}\n" +
                 $"Erfahrung: {summary.ExperienceEarned:0.0}";
             endPanel.SetActive(true);
@@ -197,23 +224,25 @@ namespace BananaHumper.UI
 
             dayText.text = $"Tag {shift.Day}";
 
-            var bunch = shift.CurrentBunch;
-            bunchText.text = bunch != null ? $"Staude: {bunch.Description}" : string.Empty;
+            var bunch = shift.CarriedBunch;
+            bunchText.text = bunch != null ? $"Staude: {bunch.Description}" : "Leere Schulter - naechster Balken?";
 
             if (balance != null)
             {
-                float angleDeg = balance.Theta * Mathf.Rad2Deg;
-                angleText.text = $"Neigung {angleDeg:0.0} deg | Belastung {balance.Stress:0}";
+                bool carrying = bunch != null;
+                angleText.text = carrying ? $"Neigung {balance.Theta * Mathf.Rad2Deg:0.0} deg" : string.Empty;
                 angleText.color = balance.IsRedWarning ? new Color(0.9f, 0.2f, 0.2f) : Color.white;
+            }
+
+            if (catchTextTimer > 0f)
+            {
+                catchTextTimer -= Time.deltaTime;
+                if (catchTextTimer <= 0f) catchText.text = string.Empty;
             }
 
             if (energy != null && energyFill != null)
             {
                 energyFill.fillAmount = energy.Max > 0f ? energy.Current / energy.Max : 0f;
-            }
-            if (balance != null && stressFill != null)
-            {
-                stressFill.fillAmount = balance.Stress / 100f;
             }
         }
     }

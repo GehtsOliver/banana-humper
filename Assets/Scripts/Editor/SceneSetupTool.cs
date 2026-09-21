@@ -1,3 +1,4 @@
+using System.Collections.Generic;
 using System.IO;
 using UnityEditor;
 using UnityEditor.SceneManagement;
@@ -10,10 +11,11 @@ namespace BananaHumper.EditorTools
 {
     /// <summary>
     /// Erzeugt Assets/Scenes/Main.unity im Hybrid-Aufbau (siehe
-    /// docs/DECISIONS.md): Kamera, Kulisse, Spielfigur und die Layout-Anker
-    /// fuer Cutter/Trailer/Zielmarkierung liegen danach als echte,
-    /// verschiebbare Objekte in der Szene. Die Gameplay-Systeme und die
-    /// prozeduralen Formen baut weiterhin GameBootstrap zur Laufzeit.
+    /// docs/DECISIONS.md): Kamera, Kulisse, Spielfigur, Trailer und die
+    /// Cutter-Stationen liegen danach als echte, verschiebbare Objekte in der
+    /// Szene. Die Stationsabstaende sind das Level-Design des Kern-Loops
+    /// (GDD 3.2) und genau deshalb im Editor einstellbar. Die Gameplay-Systeme
+    /// und die prozeduralen Formen baut weiterhin GameBootstrap zur Laufzeit.
     ///
     /// Nur ein Editor-Werkzeug, nicht Teil des Laufzeit-Codes: Es laeuft einmal
     /// zum Anlegen der Szene. Danach ist die Szene die Quelle der Wahrheit -
@@ -23,8 +25,13 @@ namespace BananaHumper.EditorTools
     {
         const string ScenePath = "Assets/Scenes/Main.unity";
 
-        const float CutterX = 0f;
+        const float RowMinX = -4f;
+        const float RowMaxX = 14f;
         const float TrailerX = 12f;
+        const float BunchHangHeight = 2.6f;
+
+        /// <summary>Startaufstellung der Stationen (GDD 3.2: 4 Stueck, unterschiedlich weit auseinander).</summary>
+        static readonly float[] StationX = { -2.5f, 1.5f, 5.5f, 10f };
 
         [MenuItem("BananaHumper/Bootstrap-Szene erzeugen")]
         public static void CreateMainScene()
@@ -50,19 +57,23 @@ namespace BananaHumper.EditorTools
             CreateCamera();
             CreateScenery();
 
-            var playerRoot = CreatePlayer(out var playerAnimator, out var bunchVisual);
-            var cutterAnchor = CreateAnchor("Cutter", new Vector3(CutterX - 2.6f, GameBootstrap.GroundY, 0f));
-            var trailerAnchor = CreateAnchor("Trailer", new Vector3(TrailerX, GameBootstrap.GroundY, 0f));
-            var targetMarker = CreateAnchor("TargetMarker", new Vector3(CutterX, 0f, 0f));
+            var player = CreatePlayer();
+            var trailer = CreateTrailer();
+
+            var stationsRoot = new GameObject("Stations").transform;
+            var stations = new List<CutterStation>();
+            for (int i = 0; i < StationX.Length; i++)
+            {
+                stations.Add(CreateStation(stationsRoot, i, StationX[i]));
+            }
 
             var bootstrapGo = new GameObject("GameBootstrap");
             var bootstrap = bootstrapGo.AddComponent<GameBootstrap>();
-            bootstrap.playerRoot = playerRoot;
-            bootstrap.playerAnimator = playerAnimator;
-            bootstrap.bunchVisual = bunchVisual;
-            bootstrap.cutterAnchor = cutterAnchor;
-            bootstrap.trailerAnchor = trailerAnchor;
-            bootstrap.targetMarker = targetMarker;
+            bootstrap.player = player;
+            bootstrap.trailer = trailer;
+            bootstrap.stations = stations;
+            bootstrap.rowMinX = RowMinX;
+            bootstrap.rowMaxX = RowMaxX;
 
             Directory.CreateDirectory("Assets/Scenes");
             EditorSceneManager.SaveScene(scene, ScenePath);
@@ -76,29 +87,60 @@ namespace BananaHumper.EditorTools
             camGo.tag = "MainCamera";
             var cam = camGo.AddComponent<Camera>();
             cam.orthographic = true;
-            cam.orthographicSize = Mathf.Max(4f, (TrailerX - CutterX) * 0.55f);
+            cam.orthographicSize = Mathf.Max(4f, (RowMaxX - RowMinX) * 0.34f);
             cam.backgroundColor = new Color(0.55f, 0.75f, 0.9f);
-            camGo.transform.position = new Vector3((CutterX + TrailerX) * 0.5f, 0.5f, -10f);
+            camGo.transform.position = new Vector3((RowMinX + RowMaxX) * 0.5f, 0.9f, -10f);
         }
 
-        static Transform CreateAnchor(string name, Vector3 position)
+        /// <summary>
+        /// Eine Cutter-Station: Anker in der Reihe, darueber die haengende
+        /// Staude und der Schnitt-Balken. Die prozedurale Cutter-Figur baut
+        /// GameBootstrap zur Laufzeit darunter, ihre Textur waere in einer
+        /// Szenendatei nicht speicherbar.
+        /// </summary>
+        static CutterStation CreateStation(Transform parent, int index, float x)
         {
-            var go = new GameObject(name);
-            go.transform.position = position;
-            return go.transform;
+            var go = new GameObject($"Station{index}");
+            go.transform.SetParent(parent, false);
+            go.transform.position = new Vector3(x, GameBootstrap.GroundY, 0f);
+
+            var bunchAnchor = new GameObject("HangingBunch").transform;
+            bunchAnchor.SetParent(go.transform, false);
+            bunchAnchor.localPosition = new Vector3(0f, BunchHangHeight, 0f);
+            bunchAnchor.gameObject.AddComponent<BananaBunchVisual>();
+
+            var barGo = new GameObject("CutBar");
+            barGo.transform.SetParent(go.transform, false);
+            barGo.transform.localPosition = new Vector3(0f, BunchHangHeight + 0.9f, 0f);
+            var bar = barGo.AddComponent<ProgressBarVisual>();
+
+            var station = go.AddComponent<CutterStation>();
+            station.bunchAnchor = bunchAnchor;
+            station.bar = bar;
+            return station;
         }
 
-        static Transform CreatePlayer(out PlayerAnimator animator, out BananaBunchVisual bunchVisual)
+        static TrailerController CreateTrailer()
+        {
+            var go = new GameObject("Trailer");
+            go.transform.position = new Vector3(TrailerX, GameBootstrap.GroundY, 0f);
+            var trailer = go.AddComponent<TrailerController>();
+            trailer.minX = RowMinX;
+            trailer.maxX = RowMaxX;
+            return trailer;
+        }
+
+        static PlayerController CreatePlayer()
         {
             var playerRoot = new GameObject("Player").transform;
-            playerRoot.position = new Vector3(CutterX, 0f, 0f);
+            playerRoot.position = new Vector3(0f, 0f, 0f);
 
             var idleSprite = SpriteFactory.LoadSprite("Art/Player/idle");
             var bodyRenderer = SpriteFactory.CreateSprite("Body", idleSprite, playerRoot,
                 new Vector3(0f, GameBootstrap.GroundY + GameBootstrap.PlayerBodyHeight * 0.5f, 0f),
                 sortingOrder: 2, worldHeight: GameBootstrap.PlayerBodyHeight);
 
-            animator = playerRoot.gameObject.AddComponent<PlayerAnimator>();
+            var animator = playerRoot.gameObject.AddComponent<PlayerAnimator>();
             animator.target = bodyRenderer;
             animator.idleSprite = idleSprite;
             animator.hurtSprite = SpriteFactory.LoadSprite("Art/Player/hurt");
@@ -117,9 +159,14 @@ namespace BananaHumper.EditorTools
             var bunchGo = new GameObject("BunchVisual");
             bunchGo.transform.SetParent(playerRoot, false);
             bunchGo.transform.localPosition = new Vector3(0f, 0.6f, 0f);
-            bunchVisual = bunchGo.AddComponent<BananaBunchVisual>();
+            var bunchVisual = bunchGo.AddComponent<BananaBunchVisual>();
 
-            return playerRoot;
+            var player = playerRoot.gameObject.AddComponent<PlayerController>();
+            player.animator = animator;
+            player.shoulderBunch = bunchVisual;
+            player.minX = RowMinX;
+            player.maxX = RowMaxX;
+            return player;
         }
 
         /// <summary>
@@ -135,8 +182,8 @@ namespace BananaHumper.EditorTools
             var sceneryRoot = new GameObject("Scenery").transform;
 
             float groundY = GameBootstrap.GroundY;
-            float centerX = (CutterX + TrailerX) * 0.5f;
-            float spanWidth = (TrailerX - CutterX) + 16f;
+            float centerX = (RowMinX + RowMaxX) * 0.5f;
+            float spanWidth = (RowMaxX - RowMinX) + 16f;
 
             var hillsFar = SpriteFactory.LoadSprite("Art/Background/hills_far");
             if (hillsFar != null)
@@ -160,7 +207,7 @@ namespace BananaHumper.EditorTools
             var cloud = SpriteFactory.LoadSprite("Art/Background/cloud");
             if (cloud != null)
             {
-                float[] cx = { CutterX - 3f, centerX + 1.5f, TrailerX + 3.5f };
+                float[] cx = { RowMinX - 3f, centerX + 1.5f, RowMaxX + 1.5f };
                 float[] cy = { groundY + 5.4f, groundY + 6.1f, groundY + 5.6f };
                 for (int i = 0; i < cx.Length; i++)
                 {
@@ -171,7 +218,7 @@ namespace BananaHumper.EditorTools
 
             var treeA = SpriteFactory.LoadSprite("Art/Background/tree_a");
             var treeB = SpriteFactory.LoadSprite("Art/Background/tree_b");
-            float[] treeX = { CutterX - 2.2f, centerX - 3.2f, centerX + 2.8f, TrailerX + 2.3f };
+            float[] treeX = { RowMinX - 2.2f, centerX - 3.2f, centerX + 2.8f, RowMaxX + 0.3f };
             Sprite[] treeSprites = { treeA, treeB, treeA, treeB };
             for (int i = 0; i < treeX.Length; i++)
             {
@@ -185,7 +232,7 @@ namespace BananaHumper.EditorTools
             var fence = SpriteFactory.LoadSprite("Art/Background/fence");
             if (fence != null)
             {
-                SpriteFactory.CreateSprite("Fence", fence, sceneryRoot, new Vector3(TrailerX + 1.9f, groundY + 0.4f, 0f), -2,
+                SpriteFactory.CreateSprite("Fence", fence, sceneryRoot, new Vector3(RowMaxX - 0.1f, groundY + 0.4f, 0f), -2,
                     worldHeight: 0.8f, tint: new Color(0.42f, 0.3f, 0.17f));
             }
 
@@ -195,7 +242,7 @@ namespace BananaHumper.EditorTools
                 var rng = new System.Random(1234);
                 for (int i = 0; i < 14; i++)
                 {
-                    float x = CutterX - 3f + (float)rng.NextDouble() * spanWidth;
+                    float x = RowMinX - 3f + (float)rng.NextDouble() * spanWidth;
                     float h = 0.3f + (float)rng.NextDouble() * 0.25f;
                     SpriteFactory.CreateSprite($"Grass{i}", grassTuft, sceneryRoot, new Vector3(x, groundY + h * 0.5f, 0f), 0,
                         worldHeight: h, flipX: rng.Next(0, 2) == 0, tint: new Color(0.3f, 0.55f, 0.18f));

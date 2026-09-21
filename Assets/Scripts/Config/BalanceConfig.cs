@@ -1,83 +1,79 @@
 using UnityEngine;
-using BananaHumper.Gameplay;
 
 namespace BananaHumper.Config
 {
     /// <summary>
-    /// Tuning values for the pendulum/stress simulation (GDD Kapitel 3.6).
-    /// One asset instance acts as the single source of truth so the mechanic
-    /// can be tuned in the Inspector without touching code.
+    /// Tuning-Werte fuer den Kern-Loop (GDD Kapitel 3.6, Stand v0.9).
+    /// Eine Asset-Instanz ist die einzige Quelle der Wahrheit, damit sich alles
+    /// im Inspector tunen laesst, ohne Code anzufassen.
+    ///
+    /// Positionen stehen bewusst NICHT hier, sondern in der Szene (Stationen,
+    /// Trailer, Reihen-Enden) - siehe docs/DECISIONS.md.
     /// </summary>
     [CreateAssetMenu(fileName = "BalanceConfig", menuName = "BananaHumper/Balance Config")]
     public class BalanceConfig : ScriptableObject
     {
-        [Header("Pendel-Physik (3.4)")]
+        [Header("Stationen (3.2)")]
+        [Tooltip("Zeit, bis der Balken einer Station voll ist und die Staude faellt.")]
+        public float cutSecondsMin = 8f;
+        public float cutSecondsMax = 14f;
+        [Tooltip("Pause, bis eine abgeerntete Station eine neue Staude aufhaengt.")]
+        public float regrowSeconds = 3f;
+        [Range(0f, 1f)] public float barWarningFraction = 0.7f;
+
+        [Header("Fangen (3.3)")]
+        [Tooltip("Falldauer von der Station bis auf Schulterhoehe - das Zeitfenster zum Hinlaufen.")]
+        public float fallSeconds = 1.2f;
+        [Tooltip("Bis zu diesem Abstand zur Fallstelle wird ueberhaupt gefangen.")]
+        public float catchRadius = 1.0f;
+        [Tooltip("Innerhalb dieses Abstands ist der Catch perfekt: kein Versatz, voller Lohn.")]
+        public float perfectCatchWindow = 0.25f;
+        [Tooltip("Ab diesem Anteil des Fangradius ist es nur noch ein Streifer.")]
+        [Range(0f, 1f)] public float normalCatchFraction = 0.6f;
+        [Tooltip("Lohnabzug fuer einen Streifer (0.25 = -25 %).")]
+        [Range(0f, 1f)] public float grazePayoutPenalty = 0.25f;
+
+        [Header("Trailer (3.5)")]
+        public float trailerSpeed = 0.4f;
+        [Tooltip("Ab diesem Abstand zum Trailer wird automatisch abgeliefert.")]
+        public float deliveryRadius = 1.2f;
+
+        [Header("Pendel beim Schleppen (3.4)")]
+        // Balancieren ist seit v0.9 nicht mehr die Herausforderung, nur noch
+        // spuerbares Gewicht - deshalb hoeheres damping und groesserer maxAngle
+        // als in v0.8 (1.2 / 35 Grad).
         public float gravityOverLength = 4.0f;
         public float offsetTorque = 1.5f;
-        public float damping = 1.2f;
-        // Steuert linke/rechte Maustaste (BalanceController.Tick), nicht mehr
-        // W/S oder Input.GetAxis("Mouse X"). Die Maustasten liefern sofort
-        // volles +-1 ohne Ramp, deshalb glaettet BalanceController das selbst
-        // ueber steerSmoothed (~0.3s Anlaufzeit) - ohne diese Glaettung waere
-        // der Effekt bei gleichem controlStrength noch heftiger als beim
-        // vorherigen W/S-Versuch. War dort testweise 3.5, aber Nutzer-Feedback:
-        // "Neigung faellt zu stark durch den Tastendruck" - 1.2 macht kurze
-        // Klicks noch spuerbar, ohne sofort zum Umkippen zu fuehren. Mit den
-        // Maustasten weiterhin ungetestet - naechster Tuning-Kandidat.
+        public float damping = 2.5f;
+        // Linke/rechte Maustaste, in BalanceController auf ~0.3s eingeschwungen.
         public float controlStrength = 1.2f;
-        public float wobbleWalk = 0.6f;
-        public float wobbleRun = 1.5f;
+        public float wobbleWalk = 0.4f;
+        public float wobbleRun = 1.0f;
         public float stepFrequency = 4.0f;
         [Range(0f, 1f)] public float wobbleNoise = 0.15f;
-
-        [Header("Winkel (Grad)")]
-        public float maxAngleDeg = 35f;
-        public float comfortAngleDeg = 8f;
+        public float maxAngleDeg = 45f;
         [Range(0f, 1f)] public float redWarningFraction = 0.7f;
+        [Tooltip("Wie weit der Versatz die Staude sichtbar zur Seite schiebt.")]
+        public float offsetVisualShift = 0.75f;
 
-        [Header("Belastung / Snap (3.5)")]
-        public float haltekraftThreshold = 0.15f;
-        public float stressRate = 60f;
-        public float recoveryRate = 15f;
-        public float stressCreakWarning = 60f;
-        public float stressBendWarning = 80f;
-
-        [Header("Längenfaktor (3.5)")]
-        // Stuetzpunkte der Belastungskurve: Die Staudenlaenge ist stufenlos
-        // (BunchData.LengthScale), diese drei GDD-3.6-Werte spannen sie auf.
-        public float lengthFactorShort = 0.3f;
-        public float lengthFactorMedium = 1.0f;
-        public float lengthFactorLong = 1.8f;
-
-        [Header("Umsetzen (3.5)")]
+        [Header("Umsetzen (3.4)")]
         public float repositionDuration = 0.6f;
         [Range(0f, 1f)] public float repositionOffsetReduction = 0.6f;
         public float repositionEnergyCost = 5f;
         public float repositionWobbleImpulse = 0.4f;
 
-        [Header("Auflegen (3.2)")]
-        public float placementTelegraphSeconds = 0.8f;
-        public float placementToleranceWorldUnits = 1.5f;
-        public float placementZoneHalfWidth = 2.0f;
-        [Range(0f, 1f)] public float sweetSpotOffset = 0.1f;
-
         [Header("Bewegung")]
         public float walkSpeed = 2.0f;
         public float runSpeedMultiplier = 1.6f;
-        // Die Trip-Laenge steht bewusst nicht mehr hier: sie ergibt sich aus dem
-        // Abstand der Cutter-/Trailer-Anker in der Szene (Hybrid-Aufbau, siehe
-        // docs/DECISIONS.md). Ein zweiter Wert hier waere eine Falle - man
-        // aendert ihn, und der sichtbare Trailer bleibt trotzdem stehen.
-        public float walkBackSeconds = 2.0f;
 
         [Header("Energie (4.2)")]
         public float startEnergy = 100f;
+        // Laufen ohne Staude kostet nichts (4.2): Energie ist ein Budget aus
+        // getragenen Kilogramm mal Weg, das macht schwere Stauden zur Abwaegung.
         public float energyPerSecondBase = 2.0f;
         public float energyPerSecondPerWeight = 1f / 40f;
         public float runEnergyMultiplier = 1.6f;
-        public float walkBackEnergyPerSecond = 0.5f;
-        public float fallEnergyPenalty = 15f;
-        public float snapEnergyPenalty = 10f;
+        public float dropEnergyPenalty = 15f;
 
         [Header("Wirtschaft (4.3, 5.1)")]
         public float payoutPerKg = 0.1f;
@@ -85,25 +81,8 @@ namespace BananaHumper.Config
         [Range(0f, 1f)] public float failedTripExperienceFraction = 0.5f;
 
         public float MaxAngleRad => maxAngleDeg * Mathf.Deg2Rad;
-        public float ComfortAngleRad => comfortAngleDeg * Mathf.Deg2Rad;
         public float RedWarningAngleRad => MaxAngleRad * redWarningFraction;
 
-        /// <summary>
-        /// Belastungsfaktor zur stufenlosen Staudenlaenge (GDD 3.5): unterhalb
-        /// der mittleren Staude wird zwischen kurz und mittel interpoliert,
-        /// darueber zwischen mittel und lang. Bei LengthScale 1.0 kommt exakt
-        /// lengthFactorMedium heraus, damit die geeichten Werte weiter gelten.
-        /// </summary>
-        public float StressLengthFactor(float lengthScale)
-        {
-            if (lengthScale <= BunchData.MediumLengthScale)
-            {
-                return Mathf.Lerp(lengthFactorShort, lengthFactorMedium,
-                    Mathf.InverseLerp(BunchData.ShortLengthScale, BunchData.MediumLengthScale, lengthScale));
-            }
-
-            return Mathf.Lerp(lengthFactorMedium, lengthFactorLong,
-                Mathf.InverseLerp(BunchData.MediumLengthScale, BunchData.LongLengthScale, lengthScale));
-        }
+        public float RandomCutSeconds() => Random.Range(cutSecondsMin, cutSecondsMax);
     }
 }

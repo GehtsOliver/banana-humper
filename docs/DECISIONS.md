@@ -11,6 +11,30 @@ verworfen wurde.
 
 ---
 
+## 2026-09-21 — Umsetzung des neuen Kern-Loops im Code
+
+GDD v0.9 ist jetzt implementiert. Neue Bausteine: `CutterStation`,
+`ProgressBarVisual`, `FallingBunch`, `PlayerController`,
+`TrailerController`. `ShiftController` ist keine Trip-Statemachine mehr,
+sondern taktet Stationen, Trailer, Spieler und Pendel und wertet die
+Catch-Qualität aus. `PlacementController` wurde gelöscht, Belastung und
+Snap sind aus `BalanceController` entfernt.
+
+**Zwei Entscheidungen, die im GDD offen waren:**
+- **Bewegung gehört nicht mehr in den ShiftController.** Bis v0.8 steckte
+  das Laufen in der Trip-Coroutine. Da der Spieler jetzt durchgehend frei
+  unterwegs ist, liegt es in `PlayerController` mit eigenem Tick.
+- **Wer schon trägt, fängt nicht.** `ShiftController.EvaluateCatch` gibt für
+  einen tragenden Spieler immer „verpasst“ zurück. Das ist die zentrale
+  Spannung des Loops und bewusst eine harte Regel statt eines Malus.
+
+**Energie:** Laufen ohne Staude kostet nichts (GDD 4.2). Damit ist Energie
+faktisch ein Budget aus getragenen Kilogramm mal Weg — genau der Regler, der
+schwere Stauden zur Abwägung macht statt zur automatisch besseren Wahl.
+
+**Noch nicht drin:** Verwarnungen/Rauswurf (GDD 4.7) und Tagesquote. Der
+Loop muss erst für sich tragen (Stufe A).
+
 ## 2026-09-21 — Kern-Loop-Wechsel: Fangen statt Balancieren (GDD v0.9)
 
 Der Kern ist nicht mehr das Balancieren einer Staude, sondern: mehrere
