@@ -11,7 +11,38 @@ verworfen wurde.
 
 ---
 
-## 2026-09 — Keine handgeschriebene `.unity`-Szenendatei
+## 2026-09-21 — Hybrid: Layout in der Szene, Systeme weiter im Code
+
+Ersetzt den vorherigen "alles zur Laufzeit"-Ansatz (siehe Eintrag unten).
+`Main.unity` enthält jetzt Kamera, Kulisse, Spielfigur (inkl.
+`PlayerAnimator` mit zugewiesenen Sprites) und Layout-Anker für Cutter,
+Trailer, Zielmarkierung und Staude als echte, im Editor verschiebbare
+Objekte. `GameBootstrap` erzeugt nur noch die Gameplay-Systeme, das HUD und
+die prozeduralen Formen und liest die Positionen aus der Szene.
+
+**Begründung:** [E] von Olli. Der ursprüngliche Grund für die
+Volltgenerierung war, dass Claude ohne laufenden Editor keine Szenendatei
+verifizieren kann — das galt aber nur fürs *Schreiben von YAML*. Die Szene
+wird weiterhin nicht von Hand geschrieben, sondern von
+`Assets/Scripts/Editor/SceneSetupTool.cs` erzeugt, also aus reviewbarem
+Code. Damit bleibt die Reproduzierbarkeit erhalten, und Olli kann trotzdem
+visuell arbeiten statt Zahlen in Inspector-Felder zu tippen.
+
+**Grenze des Umbaus:** Die prozeduralen Formen (Bananenstaude, Cutter,
+Trailer, Boden, Zielmarkierung) erzeugen ihre Textur zur Laufzeit über
+`SpriteFactory`. Solche Sprites sind keine Assets und lassen sich nicht in
+einer Szenendatei speichern — deshalb liegen dafür nur leere Anker in der
+Szene (verschiebbar, aber erst im Play-Modus sichtbar). Nächster möglicher
+Schritt, falls das stört: die Shape-Texturen einmalig als echte
+PNG/Sprite-Assets backen, dann wären auch diese Objekte im Edit-Modus
+sichtbar.
+
+**Folgeänderung:** `BalanceConfig.distanceToTrailer` wurde entfernt — die
+Trip-Länge ergibt sich jetzt aus dem Abstand der Cutter-/Trailer-Anker.
+Beides parallel zu pflegen wäre eine Falle gewesen (Wert ändern, Trailer
+bleibt trotzdem stehen).
+
+## 2026-09 — Keine handgeschriebene `.unity`-Szenendatei (überholt, siehe Eintrag oben)
 
 Alle Szenenobjekte werden von `GameBootstrap.cs` zur Laufzeit erzeugt statt
 in einer `.unity`-YAML-Datei zu liegen.

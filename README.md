@@ -44,28 +44,40 @@ Optional: eine eigene `BalanceConfig`-Asset anlegen
 (`Assets > Create > BananaHumper > Balance Config`) und im
 `GameBootstrap`-Inspector zuweisen, um Kapitel-3.6-Werte zu tunen ohne Code
 anzufassen. Ohne Zuweisung werden die Default-Werte aus dem GDD verwendet.
-Falls die Szene fehlt oder neu erzeugt werden muss: leeres GameObject
-anlegen, `GameBootstrap`-Komponente draufziehen, oder das Menü
-`BananaHumper > Bootstrap-Szene erzeugen` verwenden.
+Falls die Szene fehlt oder neu aufgebaut werden muss: Menü
+`BananaHumper > Bootstrap-Szene erzeugen`. **Achtung:** Das baut die Szene
+komplett neu und verwirft alles, was du darin von Hand angepasst hast (es
+fragt vorher nach).
 
 ### Positionen anpassen
 
-Weil alle Objekte erst zur Laufzeit entstehen, steht im Hierarchy-Fenster
-im Edit-Modus nur `GameBootstrap` - es gibt dort nichts zu verschieben.
-Zwei Wege:
+Die Szene ist im **Hybrid-Aufbau** (siehe
+[docs/DECISIONS.md](docs/DECISIONS.md)): Layout und importierte Kunst liegen
+als echte Objekte in der Szene, die Gameplay-Systeme entstehen weiterhin zur
+Laufzeit.
 
-1. **Ausprobieren im Play-Modus:** Play drücken, dann füllt sich die
-   Hierarchy mit den erzeugten Objekten (`Player > BunchVisual` usw.). Dort
-   lässt sich alles wie gewohnt verschieben, **die Änderung geht beim
-   Verlassen des Play-Modus aber verloren** - also die gefundenen Werte
-   ablesen und notieren.
-2. **Dauerhaft setzen:** den abgelesenen Wert im `GameBootstrap`-Inspector
-   eintragen (z. B. `Bunch Shoulder Offset` für die Staude). Diese Felder
-   werden in der Szene gespeichert und beim nächsten Play-Start verwendet.
+**Direkt in der Szene verschiebbar** (Hierarchy, Edit-Modus, sichtbar):
 
-Ist eine Position noch nicht als Inspector-Feld vorhanden, steht sie noch
-fest im Code in `GameBootstrap` und sollte bei Bedarf dort analog zu
-`bunchShoulderOffset` herausgezogen werden.
+| Objekt | Bedeutung |
+|---|---|
+| `Player` | Startposition der Spielfigur |
+| `Player > BunchVisual` | Auflagepunkt der Staude auf der Schulter |
+| `Cutter` | Wo die Staude aufgelegt wird (Trip-Start) |
+| `Trailer` | Trip-Ziel – der Abstand zum Cutter ist die Trip-Länge |
+| `TargetMarker` | Rote Zielmarkierung beim Auflegen |
+| `Scenery/*` | Hügel, Bäume, Wolken, Zaun, Gras |
+| `Main Camera` | Bildausschnitt |
+
+Einfach anklicken, verschieben, Szene speichern (`Strg+S`) – fertig. Kein
+Code, keine Inspector-Zahlen abtippen.
+
+**Noch nicht sichtbar im Edit-Modus:** `Cutter`, `Trailer` und
+`TargetMarker` sind leere Anker. Ihre Formen werden prozedural aus
+kantengeglätteten Vektorshapes gebaut (`SpriteFactory`), und deren Texturen
+entstehen erst zur Laufzeit – solche Sprites lassen sich nicht in einer
+Szenendatei speichern. Verschieben funktioniert trotzdem (der Anker bestimmt
+die Position), man sieht das Ergebnis nur erst beim Drücken von Play.
+Dasselbe gilt für Boden, Bananenstaude und HUD.
 
 ## Steuerung
 
@@ -98,14 +110,23 @@ fest im Code in `GameBootstrap` und sollte bei Bedarf dort analog zu
 | `Gameplay/BananaBunchVisual.cs` | 3.5, 3.8, 8.2 | Prozedurale Bananenstaude (gesund/durchgebogen/gesnappt), Laenge aus Fingerzahl |
 | `Gameplay/PlayerAnimator.cs` | 8.1 | Treibt den importierten Kenney-Walk-Zyklus der Spielfigur |
 | `UI/HUDController.cs` | 9 | Minimales Schicht-HUD, zur Laufzeit erzeugt |
-| `Bootstrap/GameBootstrap.cs` | – | Verdrahtet alles, ersetzt Szenen-Handarbeit |
+| `Bootstrap/GameBootstrap.cs` | – | Verdrahtet die Systeme, baut prozedurale Formen auf die Szenen-Anker |
+| `Editor/SceneSetupTool.cs` | – | Erzeugt `Main.unity` (Kamera, Kulisse, Spieler, Anker) – nur Editor |
 | `Util/SpriteFactory.cs` | 8.1 | Laedt importierte Sprites und zeichnet kantengeglaettete Vektorformen (abgerundete Rechtecke, Ellipsen) |
 
-Alle Objekte (Kamera, Boden, Kulisse, Cutter, Trailer, Spieler, HUD) werden
-von `GameBootstrap` zur Laufzeit erzeugt – es gibt keine handgeschriebene
-`.unity`-Szenendatei, weil deren YAML-Format ohne laufenden Editor nicht
-zuverlässig zu verifizieren ist. Das hält das Risiko einer kaputten Szene
-bei null.
+Die Aufteilung folgt dem Hybrid-Prinzip (siehe
+[docs/DECISIONS.md](docs/DECISIONS.md)):
+
+- **In der Szene** (`Main.unity`, vom Editor-Tool angelegt, danach von Hand
+  pflegbar): Kamera, Kulisse, Spielfigur samt Animator-Referenzen und die
+  Layout-Anker für Cutter, Trailer, Zielmarkierung und Staude.
+- **Zur Laufzeit von `GameBootstrap`**: die Gameplay-Systeme mitsamt
+  Verdrahtung, das HUD und alle prozeduralen Formen, deren Texturen sich
+  nicht als Asset speichern lassen.
+
+Die Szenendatei wird nach wie vor nicht von Hand als YAML geschrieben,
+sondern vom Editor-Tool erzeugt – dadurch bleibt der Aufbau reviewbar und
+reproduzierbar, ohne dass man auf visuelles Arbeiten verzichten muss.
 
 ## Kunst
 

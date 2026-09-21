@@ -62,7 +62,10 @@ namespace BananaHumper.Config
         [Header("Bewegung")]
         public float walkSpeed = 2.0f;
         public float runSpeedMultiplier = 1.6f;
-        public float distanceToTrailer = 12f;
+        // Die Trip-Laenge steht bewusst nicht mehr hier: sie ergibt sich aus dem
+        // Abstand der Cutter-/Trailer-Anker in der Szene (Hybrid-Aufbau, siehe
+        // docs/DECISIONS.md). Ein zweiter Wert hier waere eine Falle - man
+        // aendert ihn, und der sichtbare Trailer bleibt trotzdem stehen.
         public float walkBackSeconds = 2.0f;
 
         [Header("Energie (4.2)")]

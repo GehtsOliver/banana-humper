@@ -4,10 +4,11 @@ namespace BananaHumper.Gameplay
 {
     /// <summary>
     /// Treibt die importierten Kenney-"Male Adventurer"-Posen (CC0, siehe
-    /// docs/THIRD_PARTY_ASSETS.md) an. Es gibt bewusst keinen Animator/Prefab-
-    /// Workflow (Projekt hat keine Editor-Szene, siehe README) - stattdessen ein
-    /// simpler Frame-Wechsel per Skript, konsistent mit dem restlichen
-    /// laufzeit-generierten Aufbau aus GameBootstrap.
+    /// docs/THIRD_PARTY_ASSETS.md) an. Bewusst kein Animator-Controller,
+    /// sondern ein simpler Frame-Wechsel per Skript: Die Posen sind Einzel-
+    /// Sprites, und ein Animator waere fuer den reinen Walk-Zyklus mehr
+    /// Verwaltung als Nutzen. Die Sprite-Referenzen werden in der Szene
+    /// zugewiesen (siehe Assets/Scripts/Editor/SceneSetupTool.cs).
     /// </summary>
     public class PlayerAnimator : MonoBehaviour
     {

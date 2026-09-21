@@ -23,12 +23,24 @@ verhindern ist der ganze Zweck des GDD (siehe GDD-Kopf).
 
 ## Architektur-Konventionen
 
-- **Keine handgeschriebene `.unity`-Szenendatei.** Alle Objekte (Kamera,
-  Boden, Kulisse, Cutter, Trailer, Spieler, HUD) werden von
-  `Assets/Scripts/Bootstrap/GameBootstrap.cs` zur Laufzeit erzeugt. Grund:
-  YAML-Szenendateien lassen sich ohne laufenden Editor nicht zuverlässig
-  verifizieren — das hält das Risiko einer kaputten Szene bei null. Neue
-  Szenenobjekte gehören in `GameBootstrap`, nicht in eine `.unity`-Datei.
+- **Hybrid-Aufbau der Szene, und `.unity` nie von Hand schreiben.**
+  `Main.unity` enthält Kamera, Kulisse, Spielfigur und die Layout-Anker
+  (Cutter, Trailer, Zielmarkierung, Staude) als echte Objekte — dort darf
+  und soll Olli visuell arbeiten. Erzeugt wird die Szene ausschließlich von
+  `Assets/Scripts/Editor/SceneSetupTool.cs`, nie durch handgeschriebenes
+  YAML (das lässt sich ohne laufenden Editor nicht verifizieren).
+  `GameBootstrap` erzeugt zur Laufzeit nur noch die Gameplay-Systeme, das
+  HUD und die prozeduralen Formen.
+- **Wo gehört ein neues Objekt hin?** Nutzt es ein importiertes Sprite-Asset
+  und hat eine feste Position → ins Editor-Tool (landet in der Szene, ist
+  verschiebbar). Entsteht seine Textur prozedural über
+  `SpriteFactory.CreateRoundedQuad`/`CreateEllipse` → muss zur Laufzeit in
+  `GameBootstrap` gebaut werden, denn solche Sprites sind keine Assets und
+  können nicht in der Szene gespeichert werden; dann gehört ein Anker-Objekt
+  in die Szene, damit die Position trotzdem verschiebbar bleibt.
+- **Positionen gehören in die Szene, nicht in `BalanceConfig`.** Doppelte
+  Wahrheit vermeiden (deshalb wurde z. B. `distanceToTrailer` entfernt: die
+  Trip-Länge ist der Abstand der Anker).
 - **Tuning-Werte gehören in `BalanceConfig` (ScriptableObject)**, nicht als
   Konstanten in Gameplay-Scripts. So kann im Inspector getunt werden, ohne
   Code anzufassen und ohne Recompile.

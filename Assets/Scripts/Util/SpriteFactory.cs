@@ -4,14 +4,21 @@ using UnityEngine;
 namespace BananaHumper.Util
 {
     /// <summary>
-    /// Erzeugt Sprites zur Laufzeit, damit der Prototyp ohne Editor-Szene
-    /// lauffaehig ist (GDD 8.1). Zwei Quellen:
+    /// Baut Sprite-Objekte auf (GDD 8.1) - wird sowohl vom Editor-Tool beim
+    /// Anlegen der Szene als auch von GameBootstrap zur Laufzeit benutzt. Zwei
+    /// Quellen:
     /// - <see cref="LoadSprite"/> laedt importierte CC0-Vektor-Kunst (Kenney.nl,
     ///   siehe docs/THIRD_PARTY_ASSETS.md) aus Resources/Art.
     /// - <see cref="CreateRoundedQuad"/>/<see cref="CreateEllipse"/> zeichnen
     ///   kantengeglaettete Vektorformen (abgerundete Rechtecke, Ellipsen) fuer
     ///   Elemente, fuer die es keine passenden freien Assets gibt (Bananenstaude,
     ///   Trailer, Cutter-Figur) - immer noch "Vektor" statt hartem Rechteck.
+    ///
+    /// Wichtig fuer den Hybrid-Aufbau: Die prozeduralen Formen erzeugen ihre
+    /// Textur zur Laufzeit. Solche Sprites sind keine Assets und lassen sich
+    /// deshalb nicht in einer Szenendatei speichern - Objekte daraus muessen
+    /// beim Start gebaut werden, waehrend <see cref="LoadSprite"/>-Objekte
+    /// (echte Assets) dauerhaft in der Szene liegen koennen.
     /// </summary>
     public static class SpriteFactory
     {
