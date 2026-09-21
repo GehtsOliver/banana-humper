@@ -13,9 +13,13 @@ Das GDD markiert jedes Feature mit einer Versions-Stufe:
 Regel aus dem GDD: **vor Release wird nur gebaut, was [Demo] oder [V1] ist.**
 Zusätzlich befindet sich das Projekt aktuell in Roadmap-**Stufe A** (siehe
 README, Abschnitt „Nächste Schritte laut Roadmap"): nur der Kern-Loop
-(Auflegen/Balancieren/Belastung, GDD Kap. 3, plus Minimal-Ressourcen aus
+(Stationen/Fangen/Schleppen, GDD Kap. 3, plus Minimal-Ressourcen aus
 4.1–4.3). Bewusst nicht enthalten: Tagesquote, Verwarnungen, Körper/Shop,
 Prestige, Zufallsereignisse, Cutter-Sprüche, Sound.
+
+**Seit GDD v0.9 (21.09.2026) ist der Kern das Fangen, nicht das
+Balancieren.** Code, der noch von der alten Idee ausgeht (Auflegen-
+Minispiel, Belastung/Snap), ist Altlast und wird abgebaut, nicht erweitert.
 
 **Wenn eine Anfrage ein Feature aus einer späteren Stufe oder aus [V2]/[V3+]
 betrifft: das ansprechen statt es einfach zu bauen.** Scope-Creep zu

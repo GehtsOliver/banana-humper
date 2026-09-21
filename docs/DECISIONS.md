@@ -11,6 +11,42 @@ verworfen wurde.
 
 ---
 
+## 2026-09-21 — Kern-Loop-Wechsel: Fangen statt Balancieren (GDD v0.9)
+
+Der Kern ist nicht mehr das Balancieren einer Staude, sondern: mehrere
+Cutter-Stationen mit Schnitt-Balken, rechtzeitig drunterstehen und fangen,
+zum mitfahrenden Trailer schleppen. Energie begrenzt die Schicht und
+skaliert mit dem Gewicht. Balancieren bleibt abgeschwächt beim Schleppen,
+Belastung und Snap entfallen ersatzlos.
+
+**Begründung:** [E] von Olli. Die zentrale Entscheidung ist jetzt *welche
+Staude hole ich mir* statt *halte ich diese eine gerade* — wer schleppt,
+kann nicht fangen, und schwere Stauden werden dadurch zur Wette statt zur
+automatisch besseren Wahl. Nebeneffekt: näher am echten Job aus GDD 1.4
+(mehrere Cutter, Traktor zieht den Trailer mit).
+
+**Entschieden in Rücksprache:**
+- Balancieren bleibt abgespeckt beim Schleppen (nicht komplett raus)
+- Verpasste Staude: Geld weg **und** Verwarnung — dafür wird das bereits
+  spezifizierte System aus GDD 4.7 genutzt statt einer zweiten
+  Reputationsleiste; im HUD heißt es „Ruf bei den Cuttern“
+- Immer nur eine Staude gleichzeitig tragen
+- Zusatzfeatures: Catch-Qualität (perfekt/normal/Streifer) und mitfahrender
+  Trailer. Bewusst *nicht* gewählt: unterschiedliche Balken-Tempi als
+  eigenes Feature, Tagesquote (bleibt als [Demo] im GDD, aber kein Fokus)
+- Belastung/Snap: raus, weil sie langes Schieflaufen bestraften — eine
+  Herausforderung, die es nicht mehr gibt
+- GDD zuerst umschreiben, dann coden
+
+**Was das kostet:** Die über mehrere Runden getunte Balance-Steuerung
+(Maustasten, `controlStrength`, Snap-Kurven) verliert ihre zentrale Rolle.
+Bewusst in Kauf genommen.
+
+**Noch offen (in GDD 15 eingetragen):** Kapitel 5 (Körper/Shop) verbessert
+Balance-Werte wie `comfortAngle` und `maxAngle`, die kaum noch zählen -
+sinnvoller wären Lauftempo, Energieeffizienz und Fangradius. Kapitel 7
+(Zufallsereignisse) zielte ebenfalls aufs Balancieren.
+
 ## 2026-09-21 — Stufenlose Stauden statt drei Längenstufen, Länge wirkt aufs Pendel
 
 Die Staudenlänge war ein Enum mit drei Stufen (`kurz/mittel/lang`). Jetzt
